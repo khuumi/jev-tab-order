@@ -569,7 +569,7 @@ it.each([50, 100, 200])(
       const result = await buildPlan(
         source,
         { ...DEFAULT_SETTINGS, allowNewGroups: true },
-        createJudge("test-key", new AbortController().signal),
+        createJudge({ apiKey: "test-key" }, new AbortController().signal),
         async () => "Group",
         () => {},
       );

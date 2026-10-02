@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { i18n } from "#i18n";
 import { errorText } from "@/src/i18n";
 import { getSettings, saveSettings, DEFAULT_SETTINGS } from "@/src/settings/state";
+import { PROVIDERS, requestProviderAccess } from "@/src/ai/providers";
+import type { Provider } from "@/src/types";
 import { createJudge } from "@/src/ai/jev";
 import { namingAvailability, prepareNaming } from "@/src/ai/naming";
 export default () => {
@@ -42,13 +44,64 @@ export default () => {
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
+          let access: Promise<boolean>;
+          try {
+            access = requestProviderAccess(settings);
+          } catch (e) {
+            setError(errorText(e));
+            return;
+          }
           void perform(async () => {
+            if (!(await access)) throw new Error("providerAccessDenied");
             await saveSettings(settings);
             setMessage(i18n.t("saved"));
           });
         }}
       >
         <fieldset disabled={!loaded || busy} className="space-y-4">
+          <section className="grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="provider">{i18n.t("provider")}</label>
+              <select
+                id="provider"
+                value={settings.provider ?? "openrouter"}
+                onChange={(e) => {
+                  const provider = e.target.value as Provider;
+                  setSettings({ ...settings, provider, apiKey: "", model: "" });
+                  setMessage("");
+                  setError("");
+                }}
+              >
+                <option value="openrouter">OpenRouter</option>
+                <option value="typesafe">TypeSafe</option>
+                <option value="custom">{i18n.t("customProvider")}</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="decisionModel">{i18n.t("decisionModel")}</label>
+              <input
+                id="decisionModel"
+                maxLength={200}
+                value={settings.model ?? ""}
+                placeholder={PROVIDERS[settings.provider ?? "openrouter"].model}
+                onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+              />
+            </div>
+          </section>
+          {settings.provider === "custom" && (
+            <section className="space-y-2">
+              <label htmlFor="endpoint">{i18n.t("endpoint")}</label>
+              <input
+                id="endpoint"
+                type="url"
+                maxLength={2000}
+                value={settings.endpoint ?? ""}
+                placeholder="http://localhost:8000/v1/systemone"
+                onChange={(e) => setSettings({ ...settings, endpoint: e.target.value })}
+              />
+              <p className="text-xs muted">{i18n.t("endpointHint")}</p>
+            </section>
+          )}
           <section className="space-y-2">
             <label htmlFor="apiKey">{i18n.t("apiKey")}</label>
             <div className="flex flex-wrap sm:flex-nowrap items-start gap-2">
@@ -64,10 +117,18 @@ export default () => {
               />
               <button
                 type="button"
-                disabled={!settings.apiKey.trim()}
-                onClick={() =>
+                disabled={settings.provider !== "custom" && !settings.apiKey.trim()}
+                onClick={() => {
+                  let access: Promise<boolean>;
+                  try {
+                    access = requestProviderAccess(settings);
+                  } catch (e) {
+                    setError(errorText(e));
+                    return;
+                  }
                   void perform(async () => {
-                    await createJudge(settings.apiKey.trim(), new AbortController().signal)(
+                    if (!(await access)) throw new Error("providerAccessDenied");
+                    await createJudge(settings, new AbortController().signal)(
                       { connectionTest: true },
                       {
                         connection: {
@@ -78,8 +139,8 @@ export default () => {
                       },
                     );
                     setMessage(i18n.t("connected"));
-                  })
-                }
+                  });
+                }}
               >
                 {i18n.t("connect")}
               </button>

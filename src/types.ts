@@ -1,6 +1,13 @@
 type EntryType = string | number | boolean | null | EntryType[] | { [key: string]: EntryType };
 
-export type Settings = { apiKey: string; rules: string; allowNewGroups: boolean };
+export type Provider = "openrouter" | "typesafe" | "custom";
+export type DecisionSettings = {
+  apiKey: string;
+  provider?: Provider;
+  model?: string;
+  endpoint?: string;
+};
+export type Settings = DecisionSettings & { rules: string; allowNewGroups: boolean };
 export type Tab = {
   id: number;
   index: number;

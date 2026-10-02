@@ -108,7 +108,7 @@ const run = async (windowId: number, mode: "run" | "undo") => {
     }
     const settings = await getSettings();
     const signal = AbortSignal.timeout(240000);
-    const judge = createJudge(settings.apiKey, signal);
+    const judge = createJudge(settings, signal);
     const before = await capture(windowId);
     if ((await readUndo(windowId))?.pending) throw new Error("pendingRecovery");
     if (!before.tabs.some(isEligible)) {

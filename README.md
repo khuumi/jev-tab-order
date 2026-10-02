@@ -25,7 +25,7 @@ A Chrome extension that uses [Jev](https://typesafe.ai/) to organize tabs and gr
 ## Getting Started
 
 1. Install the extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/jev-tab-order/afbcjklgfmfokamphkgclkocfhgablka).
-2. Open the extension's settings and save your OpenRouter API key.
+2. Open the extension's settings and select a Jev provider and save its settings.
 3. Click the toolbar icon in the window you want to organize. No popup opens; the icon shows “…” while running and “✓” on completion, then clears the badge after three seconds. You can also use the page context menu or a configured shortcut.
 
 See [supported languages](locales/).
@@ -34,9 +34,19 @@ For installation from source, see [Manual Installation](#manual-installation).
 
 ### Settings
 
-Use an [OpenRouter API key](https://openrouter.ai/settings/keys); existing TypeSafe keys must be replaced in Settings. The Jev model is unchanged and is accessed through [OpenRouter’s Decisions API](https://openrouter.ai/blog/insights/what-is-jev/).
+Select where to run Jev. Existing settings continue to use OpenRouter with the same saved key.
 
-- **OpenRouter API key**: Stored on this device only. API usage may incur charges. Each organization or preview sends at most one Jev request; undo sends none.
+| Provider       | Endpoint                                    | Default model            | API key                  |
+| -------------- | ------------------------------------------- | ------------------------ | ------------------------ |
+| OpenRouter     | `https://openrouter.ai/api/alpha/decisions` | `~typesafe/jev-latest`   | Required: OpenRouter key |
+| TypeSafe       | `https://api.typesafe.ai/v1/systemone`      | `jev-latest`             | Required: TypeSafe key   |
+| Custom / Local | Full URL you provide                        | Omitted unless specified | Optional                 |
+
+- **Model**: Override the provider default with a compatible Jev model identifier. Leave blank to use the default; Custom / Local sends no model when blank.
+- **Decision endpoint URL**: Custom / Local uses this exact HTTP or HTTPS URL. Include the API path; no path is appended. The endpoint must accept `{ state, questions, model? }` and return `{ answers }` with Jev choice/score semantics. A generic chat-completions endpoint is not compatible. URL credentials, query parameters, and fragments are rejected. Requests do not follow redirects.
+- **API key**: Stored on this device only. The key is cleared when switching providers to avoid sending a key to another service. Custom / Local omits the Authorization header when blank. Save and Test connection request access to the custom origin; denying access prevents saving or testing. Chrome grants host access, not access limited to the API path. Local endpoints may use HTTP; remote HTTPS encrypts traffic.
+- **Test connection**: Uses the currently entered provider, endpoint, model, and key without requiring a save. Organization and previews use saved settings. Each operation sends at most one decision request; undo sends none.
+
 - **Sorting rules**: Leave blank to use the defaults. Custom text replaces the entire default rule. Example: “Put official documentation before tutorials. Order groups as Development, Research, Personal. Do not create new groups.”
 - **Allow new groups**: New groups require permission from both this setting and the rules, multiple related ungrouped tabs, and available Chrome built-in AI for naming. Use the preparation button in settings if the model needs an initial download.
 
@@ -56,7 +66,7 @@ For example, if Jev selects “GitHub” as an ungrouped tab's destination and t
 
 ### What the Jev Request Contains
 
-The extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **One API call contains many questions**, prepared together before sending.
+With OpenRouter selected, the extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **One API call contains many questions**, prepared together before sending.
 
 - **`state` — information to judge:** The active rules, web tab IDs, titles, sanitized URLs, and group memberships; existing group names and member IDs; and the current sequence of groups and ungrouped tabs. Detailed tab information is shared across questions.
 - **`questions` — what to decide:** Each question contains `type` (Choice or Score), `instructions` (the judgment to make under the rules), and `criteria` (available choices or ordered scoring levels).
@@ -333,6 +343,8 @@ After completing setup:
 After rebuilding, reload the extension from `chrome://extensions` to use the updated build.
 
 ### Unit Tests
+
+The shared transport tests run against OpenRouter, TypeSafe, and Custom / Local. Additional tests cover model overrides, keyless local requests, URL validation, permission requests, and migration of existing settings.
 
 ```fish
 npm run test:unit
