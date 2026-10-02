@@ -80,6 +80,6 @@
   "decisionModel": "模型（可选）",
   "endpoint": "决策 API URL",
   "endpointHint": "使用兼容 Jev 的决策 API。自定义 / 本地的 API 密钥和模型均为可选。仅请求访问此来源。",
-  "invalidEndpoint": "请输入不含凭据、查询参数或片段的 HTTP 或 HTTP(S) URL。",
+  "invalidEndpoint": "请输入不含凭据、查询参数或片段的 HTTP 或 HTTPS URL。使用 API 密钥必须采用 HTTPS。",
   "providerAccessDenied": "访问被拒绝。请在设置中授权后重试。"
 }

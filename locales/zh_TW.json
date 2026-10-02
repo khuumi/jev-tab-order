@@ -80,6 +80,6 @@
   "decisionModel": "模型（選填）",
   "endpoint": "決策 API URL",
   "endpointHint": "使用相容 Jev 的決策 API。自訂 / 本機的 API 金鑰和模型皆為選填。僅要求存取此來源。",
-  "invalidEndpoint": "請輸入不含認證資訊、查詢參數或片段的 HTTP 或 HTTP(S) URL。",
+  "invalidEndpoint": "請輸入不含認證資訊、查詢參數或片段的 HTTP 或 HTTPS URL。使用 API 金鑰必須採用 HTTPS。",
   "providerAccessDenied": "存取遭拒。請在設定中授權後重試。"
 }

@@ -28,7 +28,7 @@ Copy only fenced text into text fields and only the value column into selection 
 | 公開鍵                    | 公開鍵を表示                                                                                                            | 表示のみ                 |
 | 検証済み CRX アップロード | 無効のまま維持                                                                                                          | 「有効にする」は押さない |
 
-The built-in host permissions cover `https://openrouter.ai/*` and `https://api.typesafe.ai/*`; optional HTTP/HTTPS host permissions are requested only for a user-selected custom origin; it is not a separate package form field. The “公開済み” section is read-only.
+Only `https://openrouter.ai/*` is a required host permission; optional HTTP/HTTPS host permissions are requested for the TypeSafe origin or a user-selected custom origin; it is not a separate package form field. The “公開済み” section is read-only.
 
 ## ストアの掲載情報
 
@@ -423,9 +423,9 @@ No editable control is shown on this item’s listing page. It links to the publ
 
 ## Configurable Jev Providers
 
-Select OpenRouter, TypeSafe direct, or Custom / Local in Settings. Existing installations retain OpenRouter. Both hosted providers require their own API key; Custom / Local accepts a full compatible decision endpoint URL with an optional model and key. Switching providers clears the key. Test connection uses unsaved values. Store instructions mentioning an OpenRouter key describe the default provider; TypeSafe users supply a TypeSafe key, and custom endpoint users follow their operator's instructions.
+Select OpenRouter, TypeSafe direct, or Custom / Local in Settings. Existing installations retain OpenRouter. Both hosted providers require their own API key; Custom / Local accepts a full compatible decision endpoint URL with an optional model and key. Switching providers or changing the custom endpoint origin clears the key. Keyed endpoints require HTTPS; HTTP is supported only without a key, including localhost. Test connection uses unsaved values. Store instructions mentioning an OpenRouter key describe the default provider; TypeSafe users supply a TypeSafe key, and custom endpoint users follow their operator's instructions.
 
-Custom endpoints receive the same limited tab metadata and rules as hosted endpoints. Chrome prompts for access to the selected custom origin when saving or testing. Optional HTTP/HTTPS host patterns do not grant access to every website at installation. HTTP custom traffic is unencrypted; a local URL alone does not guarantee local inference or retention. See [PRIVACY.md](PRIVACY.md).
+Custom endpoints receive the same limited tab metadata and rules as hosted endpoints. Chrome prompts for access to the selected TypeSafe or custom origin when saving or testing. Optional HTTP/HTTPS host patterns do not grant access to every website at installation. HTTP custom traffic is unencrypted; a local URL alone does not guarantee local inference or retention. See [PRIVACY.md](PRIVACY.md).
 
 ## プライバシー
 
@@ -469,10 +469,10 @@ Adds a page context-menu command to organize the current window and extension-ac
 
 #### ホスト権限 が必要な理由
 
-Scope: built-in `https://openrouter.ai/*` and `https://api.typesafe.ai/*`, plus optional `https://*/*` and `http://*/*` requested for a chosen custom origin. Paste only the following block into “ホスト権限 が必要な理由”.
+Scope: required `https://openrouter.ai/*`, plus optional `https://*/*` and `http://*/*` requested for a chosen custom origin. Paste only the following block into “ホスト権限 が必要な理由”.
 
 ```text
-Allows Jev decision requests to OpenRouter or TypeSafe for organization, previews, and connection tests. Custom / Local requests optional host access only for the selected endpoint's origin when saving or testing. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. A supplied API key is sent in the authentication header. Connection tests send fixed data, not tab metadata. Custom HTTP endpoints are supported for local or compatible servers. Redirects are not followed. The optional HTTP/HTTPS patterns permit selecting a host; they do not grant access to all sites on installation. Responses contain decision data, not executable code. No content scripts are requested.
+Allows Jev decision requests to OpenRouter or TypeSafe for organization, previews, and connection tests. TypeSafe and Custom / Local request optional host access only for the selected endpoint's origin when saving or testing. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. A supplied API key is sent in the authentication header. Connection tests send fixed data, not tab metadata. Keyless Custom HTTP endpoints are supported for local or compatible servers; keyed endpoints require HTTPS. Redirects are not followed. The optional HTTP/HTTPS patterns permit selecting a host; they do not grant access to all sites on installation. Responses contain decision data, not executable code. No content scripts are requested.
 ```
 
 #### リモートコード

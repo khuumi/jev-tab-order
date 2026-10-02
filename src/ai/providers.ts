@@ -27,7 +27,8 @@ export const resolveProvider = (settings: DecisionSettings) => {
     url.username ||
     url.password ||
     url.hash ||
-    url.search
+    url.search ||
+    (url.protocol === "http:" && settings.apiKey.trim())
   )
     throw new Error("invalidEndpoint");
   return { endpoint: url.href, model: settings.model?.trim() || defaults.model };
@@ -36,7 +37,7 @@ export const resolveProvider = (settings: DecisionSettings) => {
 // Call directly from a click/submit handler: Chrome requires a user gesture.
 export const requestProviderAccess = (settings: DecisionSettings) => {
   const { endpoint } = resolveProvider(settings);
-  if ((settings.provider ?? "openrouter") !== "custom") return Promise.resolve(true);
+  if ((settings.provider ?? "openrouter") === "openrouter") return Promise.resolve(true);
   return chrome.permissions.request({ origins: [`${new URL(endpoint).origin}/*`] });
 };
 
@@ -112,5 +113,20 @@ export const createDecisionProvider = (
         signal.removeEventListener("abort", cancel);
       }
     },
+  };
+};
+
+export const updateCustomEndpoint = (settings: DecisionSettings, endpoint: string) => {
+  const origin = (value: string) => {
+    try {
+      return new URL(value).origin;
+    } catch {
+      return undefined;
+    }
+  };
+  return {
+    ...settings,
+    endpoint,
+    apiKey: origin(settings.endpoint ?? "") === origin(endpoint) ? settings.apiKey : "",
   };
 };

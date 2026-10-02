@@ -1,6 +1,11 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createJudge } from "@/src/ai/jev";
-import { PROVIDERS, requestProviderAccess, resolveProvider } from "@/src/ai/providers";
+import {
+  PROVIDERS,
+  requestProviderAccess,
+  resolveProvider,
+  updateCustomEndpoint,
+} from "@/src/ai/providers";
 
 afterEach(() => vi.unstubAllGlobals());
 const questions = {
@@ -71,12 +76,50 @@ it("requests only the custom origin synchronously and returns a denial", async (
   expect(request).toHaveBeenCalledWith({ origins: ["http://localhost:8000/*"] });
   expect(await result).toBe(false);
 });
-it.each(["openrouter", "typesafe"] as const)(
-  "does not prompt for built-in %s",
-  async (provider) => {
-    const request = vi.fn();
-    vi.stubGlobal("chrome", { permissions: { request } });
-    expect(await requestProviderAccess({ provider, apiKey: "key" })).toBe(true);
-    expect(request).not.toHaveBeenCalled();
+it("does not prompt for default OpenRouter", async () => {
+  const request = vi.fn();
+  vi.stubGlobal("chrome", { permissions: { request } });
+  expect(await requestProviderAccess({ provider: "openrouter", apiKey: "key" })).toBe(true);
+  expect(request).not.toHaveBeenCalled();
+});
+it("requests TypeSafe access synchronously", async () => {
+  const request = vi.fn().mockResolvedValue(true);
+  vi.stubGlobal("chrome", { permissions: { request } });
+  const result = requestProviderAccess({ provider: "typesafe", apiKey: "key" });
+  expect(request).toHaveBeenCalledWith({ origins: ["https://api.typesafe.ai/*"] });
+  expect(await result).toBe(true);
+});
+it.each([
+  "http://remote.test/decide",
+  "http://localhost:8000/decide",
+  "http://127.0.0.1:8000/decide",
+])("rejects keys on HTTP endpoint %s before permissions or fetch", (endpoint) => {
+  const fetch = vi.fn(),
+    request = vi.fn();
+  vi.stubGlobal("fetch", fetch);
+  vi.stubGlobal("chrome", { permissions: { request } });
+  const settings = { provider: "custom" as const, apiKey: "key", endpoint };
+  expect(() => createJudge(settings, new AbortController().signal)).toThrow("invalidEndpoint");
+  expect(() => requestProviderAccess(settings)).toThrow("invalidEndpoint");
+  expect(fetch).not.toHaveBeenCalled();
+  expect(request).not.toHaveBeenCalled();
+});
+it.each(["https://b.test/decide", "https://a.test:8443/decide", "http://a.test/decide", "invalid"])(
+  "clears custom credentials when changing origin to %s",
+  (endpoint) => {
+    expect(
+      updateCustomEndpoint(
+        { provider: "custom", endpoint: "https://a.test/decide", apiKey: "key-a" },
+        endpoint,
+      ).apiKey,
+    ).toBe("");
   },
 );
+it("keeps credentials for a path change on the same origin", () => {
+  expect(
+    updateCustomEndpoint(
+      { provider: "custom", endpoint: "https://a.test/decide", apiKey: "key-a" },
+      "https://a.test/v2/decide",
+    ).apiKey,
+  ).toBe("key-a");
+});

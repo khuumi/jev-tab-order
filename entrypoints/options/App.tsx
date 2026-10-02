@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { i18n } from "#i18n";
 import { errorText } from "@/src/i18n";
 import { getSettings, saveSettings, DEFAULT_SETTINGS } from "@/src/settings/state";
-import { PROVIDERS, requestProviderAccess } from "@/src/ai/providers";
+import { PROVIDERS, requestProviderAccess, updateCustomEndpoint } from "@/src/ai/providers";
 import type { Provider } from "@/src/types";
 import { createJudge } from "@/src/ai/jev";
 import { namingAvailability, prepareNaming } from "@/src/ai/naming";
@@ -97,7 +97,9 @@ export default () => {
                 maxLength={2000}
                 value={settings.endpoint ?? ""}
                 placeholder="http://localhost:8000/v1/systemone"
-                onChange={(e) => setSettings({ ...settings, endpoint: e.target.value })}
+                onChange={(e) =>
+                  setSettings({ ...settings, ...updateCustomEndpoint(settings, e.target.value) })
+                }
               />
               <p className="text-xs muted">{i18n.t("endpointHint")}</p>
             </section>

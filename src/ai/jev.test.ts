@@ -85,7 +85,7 @@ describe.each([
     endpoint: "https://api.typesafe.ai/v1/systemone",
     model: "jev-latest",
   },
-  { provider: "custom" as const, endpoint: "http://localhost:8000/decide", model: "local-jev" },
+  { provider: "custom" as const, endpoint: "https://local.test/decide", model: "local-jev" },
 ])("$provider decision transport", (config) => {
   const createJudge = (settings: { apiKey: string }, signal: AbortSignal) =>
     createProviderJudge({ ...settings, ...config }, signal);

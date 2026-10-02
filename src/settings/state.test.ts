@@ -26,14 +26,14 @@ it.each(["openrouter", "typesafe", "custom"] as const)(
       provider,
       apiKey: " key ",
       model: " jev-test ",
-      endpoint: " http://localhost:8000/decide ",
+      endpoint: " https://local.test/decide ",
     };
     await saveSettings(settings);
     expect(await getSettings()).toEqual({
       ...settings,
       apiKey: "key",
       model: "jev-test",
-      endpoint: "http://localhost:8000/decide",
+      endpoint: "https://local.test/decide",
     });
   },
 );

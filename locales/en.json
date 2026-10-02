@@ -80,6 +80,6 @@
   "decisionModel": "Model (optional)",
   "endpoint": "Decision endpoint URL",
   "endpointHint": "Use a compatible Jev decision endpoint. API key and model are optional for Custom / Local. Access is requested only for this origin.",
-  "invalidEndpoint": "Enter an HTTP or HTTP(S) endpoint without credentials, query parameters, or fragments.",
+  "invalidEndpoint": "Enter an HTTP or HTTPS endpoint without credentials, query parameters, or fragments. API keys require HTTPS.",
   "providerAccessDenied": "Endpoint access was denied. Grant access in Settings before trying again."
 }

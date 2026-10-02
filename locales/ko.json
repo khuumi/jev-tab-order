@@ -80,6 +80,6 @@
   "decisionModel": "모델 (선택 사항)",
   "endpoint": "결정 API URL",
   "endpointHint": "Jev 호환 결정 API를 사용하세요. 사용자 지정 / 로컬에서는 API 키와 모델이 선택 사항입니다. 이 출처에 대한 접근만 요청합니다.",
-  "invalidEndpoint": "인증 정보, 쿼리 매개변수, 프래그먼트가 없는 HTTP 또는 HTTP(S) URL을 입력하세요.",
+  "invalidEndpoint": "인증 정보, 쿼리 매개변수, 프래그먼트가 없는 HTTP 또는 HTTPS URL을 입력하세요. API 키를 사용하려면 HTTPS가 필요합니다.",
   "providerAccessDenied": "접근이 거부되었습니다. 설정에서 접근을 허용한 후 다시 시도하세요."
 }

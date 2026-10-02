@@ -7,7 +7,7 @@ export default defineConfig({
     default_locale: "en",
     minimum_chrome_version: "138",
     permissions: ["storage", "tabs", "tabGroups", "contextMenus"],
-    host_permissions: ["https://openrouter.ai/*", "https://api.typesafe.ai/*"],
+    host_permissions: ["https://openrouter.ai/*"],
     optional_host_permissions: ["https://*/*", "http://*/*"],
     action: { default_title: "__MSG_organize__" },
     commands: {

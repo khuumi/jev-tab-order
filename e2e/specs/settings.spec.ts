@@ -65,9 +65,10 @@ for (const provider of ["openrouter", "typesafe", "custom"] as const) {
         : provider === "typesafe"
           ? "https://api.typesafe.ai/v1/systemone"
           : "http://localhost:8000/decide";
-    if (provider === "custom") {
+    if (provider === "custom")
       await page.getByLabel("Decision endpoint URL", { exact: true }).fill(endpoint);
-      // Mock only the permission dialog; verify the requested origin below.
+    if (provider !== "openrouter") {
+      // Mock the permission dialog; verify the selected origin below.
       await page.evaluate(() => {
         chrome.permissions.request = async (permissions) => {
           (globalThis as typeof globalThis & { requestedOrigins?: string[] }).requestedOrigins =
@@ -75,9 +76,9 @@ for (const provider of ["openrouter", "typesafe", "custom"] as const) {
           return true;
         };
       });
-    } else {
-      await page.getByLabel("API key", { exact: true }).fill("provider-key");
     }
+    if (provider !== "custom")
+      await page.getByLabel("API key", { exact: true }).fill("provider-key");
     await page.getByLabel("Model (optional)", { exact: true }).fill("jev-test");
     let requests = 0;
     await context.route(endpoint, async (route) => {
@@ -104,13 +105,13 @@ for (const provider of ["openrouter", "typesafe", "custom"] as const) {
     await page.getByRole("button", { name: "Test connection", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Connected to Jev");
     expect(requests).toBe(1);
-    if (provider === "custom")
+    if (provider !== "openrouter")
       expect(
         await page.evaluate(
           () =>
             (globalThis as typeof globalThis & { requestedOrigins?: string[] }).requestedOrigins,
         ),
-      ).toEqual(["http://localhost:8000/*"]);
+      ).toEqual([provider === "custom" ? "http://localhost:8000/*" : "https://api.typesafe.ai/*"]);
     await page.getByRole("button", { name: "Save settings", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Settings saved");
     const saved = await serviceWorker.evaluate(
@@ -127,28 +128,74 @@ for (const provider of ["openrouter", "typesafe", "custom"] as const) {
   });
 }
 
-test("denied custom access leaves saved settings unchanged and sends no request", async ({
+for (const provider of ["typesafe", "custom"] as const) {
+  test(`denied ${provider} access leaves saved settings unchanged and sends no request`, async ({
+    context,
+    extensionId,
+    serviceWorker,
+  }) => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/options.html`);
+    await page.getByLabel("Jev provider", { exact: true }).selectOption(provider);
+    if (provider === "custom")
+      await page
+        .getByLabel("Decision endpoint URL", { exact: true })
+        .fill("http://localhost:8000/decide");
+    else await page.getByLabel("API key", { exact: true }).fill("test-key");
+    await page.evaluate(() => {
+      chrome.permissions.request = async () => false;
+      globalThis.fetch = async () => {
+        throw Error("unexpected fetch");
+      };
+    });
+    await page.getByRole("button", { name: "Save settings", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("Endpoint access was denied");
+    expect(
+      await serviceWorker.evaluate(
+        async () => (await chrome.storage.local.get("settings")).settings,
+      ),
+    ).toBeUndefined();
+    await page.getByRole("button", { name: "Test connection", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("Endpoint access was denied");
+  });
+}
+
+test("custom origin changes clear keys while same-origin path changes retain them", async ({
   context,
   extensionId,
-  serviceWorker,
 }) => {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/options.html`);
   await page.getByLabel("Jev provider", { exact: true }).selectOption("custom");
-  await page
-    .getByLabel("Decision endpoint URL", { exact: true })
-    .fill("http://localhost:8000/decide");
+  const endpoint = page.getByLabel("Decision endpoint URL", { exact: true });
+  const key = page.getByLabel("API key", { exact: true });
+  await endpoint.fill("https://a.test/decide");
+  await key.fill("key-a");
+  await endpoint.fill("https://a.test/v2/decide");
+  await expect(key).toHaveValue("key-a");
+  await endpoint.fill("https://b.test/decide");
+  await expect(key).toHaveValue("");
   await page.evaluate(() => {
-    chrome.permissions.request = async () => false;
-    globalThis.fetch = async () => {
-      throw Error("unexpected fetch");
-    };
+    chrome.permissions.request = async () => true;
   });
-  await page.getByRole("button", { name: "Save settings", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Endpoint access was denied");
-  expect(
-    await serviceWorker.evaluate(async () => (await chrome.storage.local.get("settings")).settings),
-  ).toBeUndefined();
+  let requests = 0;
+  await context.route("https://b.test/decide", async (route) => {
+    requests++;
+    expect(route.request().headers().authorization).toBeUndefined();
+    await route.fulfill({
+      json: {
+        answers: {
+          connection: {
+            type: "choice",
+            choice: "connected",
+            confidence: 1,
+            probabilities: { connected: 1, other: 0 },
+          },
+        },
+      },
+    });
+  });
   await page.getByRole("button", { name: "Test connection", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Endpoint access was denied");
+  await expect(page.getByRole("status")).toHaveText("Connected to Jev");
+  expect(requests).toBe(1);
 });

@@ -80,6 +80,6 @@
   "decisionModel": "Modelo (opcional)",
   "endpoint": "URL da API de decisões",
   "endpointHint": "Use uma API de decisões compatível com Jev. A chave API e o modelo são opcionais para Personalizado / Local. O acesso é solicitado apenas para esta origem.",
-  "invalidEndpoint": "Insira uma URL HTTP ou HTTP(S) sem credenciais, parâmetros de consulta ou fragmentos.",
+  "invalidEndpoint": "Insira uma URL HTTP ou HTTPS sem credenciais, parâmetros de consulta ou fragmentos. Chaves API exigem HTTPS.",
   "providerAccessDenied": "Acesso negado. Autorize o acesso nas Configurações antes de tentar novamente."
 }

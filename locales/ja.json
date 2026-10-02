@@ -80,6 +80,6 @@
   "decisionModel": "モデル（任意）",
   "endpoint": "判断APIのURL",
   "endpointHint": "Jev互換の判断APIを指定してください。カスタム / ローカルではAPIキーとモデルは任意です。このオリジンへのアクセスのみ要求します。",
-  "invalidEndpoint": "認証情報、クエリ、フラグメントを含まないHTTPまたはHTTP(S)のURLを入力してください。",
+  "invalidEndpoint": "認証情報、クエリ、フラグメントを含まないHTTPまたはHTTPSのURLを入力してください。APIキーを使用する場合はHTTPSが必要です。",
   "providerAccessDenied": "接続先へのアクセスが拒否されました。設定で許可してから再試行してください。"
 }
