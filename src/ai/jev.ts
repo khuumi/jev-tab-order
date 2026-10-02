@@ -1,4 +1,5 @@
-import type { Answer, Choice, Judge, Question } from "@/src/types";
+import { createDecisionProvider } from "@/src/ai/providers";
+import type { DecisionSettings, Answer, Choice, Judge, Question } from "@/src/types";
 
 export const parseAnswers = (value: unknown, questions: Record<string, Question>) => {
   if (
@@ -70,71 +71,10 @@ export const parseAnswers = (value: unknown, questions: Record<string, Question>
   }
   return answers;
 };
-export const createJudge = (apiKey: string, signal: AbortSignal): Judge => {
-  if (!apiKey.trim()) throw new Error("missingKey");
-  return async (state, questions) => {
-    if (!Object.keys(questions).length) return {};
-    if (signal.aborted) throw new Error("cancelled");
-    const controller = new AbortController();
-    const cancel = () => controller.abort();
-    signal.addEventListener("abort", cancel, { once: true });
-    const timeout = setTimeout(cancel, 25000);
-    try {
-      let response: Response;
-      try {
-        response = await fetch("https://openrouter.ai/api/alpha/decisions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey.trim()}`,
-            "Content-Type": "application/json",
-          },
-          signal: controller.signal,
-          body: JSON.stringify({ model: "~typesafe/jev-latest", state, questions }),
-        });
-      } catch {
-        throw new Error(signal.aborted ? "cancelled" : "networkError");
-      }
-      if (signal.aborted) throw new Error("cancelled");
-      if (!response.ok) {
-        let tokenLimit = response.status === 413;
-        if (response.status === 400) {
-          try {
-            const body = await response.json();
-            tokenLimit = body?.detail?.error_type === "max_tokens_exceeded";
-          } catch {
-            if (signal.aborted) throw new Error("cancelled");
-          }
-        }
-        throw new Error(
-          tokenLimit
-            ? "tokenLimit"
-            : response.status === 401 || response.status === 403
-              ? "invalidKey"
-              : response.status === 429
-                ? "rateLimited"
-                : "apiError",
-          { cause: { httpStatus: response.status } },
-        );
-      }
-      let data: unknown;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          signal.aborted
-            ? "cancelled"
-            : controller.signal.aborted
-              ? "networkError"
-              : "invalidResponse",
-        );
-      }
-      if (signal.aborted) throw new Error("cancelled");
-      return parseAnswers(data, questions);
-    } finally {
-      clearTimeout(timeout);
-      signal.removeEventListener("abort", cancel);
-    }
-  };
+export const createJudge = (settings: DecisionSettings, signal: AbortSignal): Judge => {
+  const provider = createDecisionProvider(settings, signal);
+  return async (state, questions) =>
+    parseAnswers(await provider.decide({ state, questions }), questions);
 };
 
 export const isConfident = (answer: Answer): answer is Choice =>

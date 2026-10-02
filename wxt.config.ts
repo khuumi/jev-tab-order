@@ -8,6 +8,7 @@ export default defineConfig({
     minimum_chrome_version: "138",
     permissions: ["storage", "tabs", "tabGroups", "contextMenus"],
     host_permissions: ["https://openrouter.ai/*"],
+    optional_host_permissions: ["https://*/*", "http://*/*"],
     action: { default_title: "__MSG_organize__" },
     commands: {
       organize: { description: "__MSG_organize__" },

@@ -28,7 +28,7 @@ Copy only fenced text into text fields and only the value column into selection 
 | 公開鍵                    | 公開鍵を表示                                                                                                            | 表示のみ                 |
 | 検証済み CRX アップロード | 無効のまま維持                                                                                                          | 「有効にする」は押さない |
 
-The host permission covers `https://openrouter.ai/*`; it is not a separate package form field. The “公開済み” section is read-only.
+Only `https://openrouter.ai/*` is a required host permission; optional HTTP/HTTPS host permissions are requested for the TypeSafe origin or a user-selected custom origin; it is not a separate package form field. The “公開済み” section is read-only.
 
 ## ストアの掲載情報
 
@@ -421,6 +421,12 @@ The shared screenshot provides an English fallback; each supported language also
 
 No editable control is shown on this item’s listing page. It links to the publisher-wide setting through “公開設定をここで変更”; keep that setting unchanged. There is no GA4 field on this form.
 
+## Configurable Jev Providers
+
+Select OpenRouter, TypeSafe direct, or Custom / Local in Settings. Existing installations retain OpenRouter. Both hosted providers require their own API key; Custom / Local accepts a full compatible decision endpoint URL with an optional model and key. Switching providers or changing the custom endpoint origin clears the key. Keyed endpoints require HTTPS; HTTP is supported only without a key, including localhost. Test connection uses unsaved values. Store instructions mentioning an OpenRouter key describe the default provider; TypeSafe users supply a TypeSafe key, and custom endpoint users follow their operator's instructions.
+
+Custom endpoints receive the same limited tab metadata and rules as hosted endpoints. Chrome prompts for access to the selected TypeSafe or custom origin when saving or testing. Optional HTTP/HTTPS host patterns do not grant access to every website at installation. HTTP custom traffic is unencrypted; a local URL alone does not guarantee local inference or retention. See [PRIVACY.md](PRIVACY.md).
+
 ## プライバシー
 
 ### 単一用途
@@ -440,19 +446,19 @@ Maximum: 1,000 characters per field. The five fields below are present for the u
 #### storage が必要な理由
 
 ```text
-Saves the user's OpenRouter API key, sorting rules, and new-group preference in chrome.storage.local without Chrome Sync. chrome.storage.session retains before/after layouts for undo and recovery, including tab titles, original URLs, identifiers, positions, pinned state, and group metadata. It also retains operation locks to avoid concurrent organization of the same window, and the latest operation's timestamps, stage, and predefined error message for local troubleshooting. Diagnostic records contain no tab content, rules, or API keys. Session data is cleared on browser restart; successful undo removes that window's undo record. API keys are not included in undo records.
+Saves the selected Jev provider, endpoint, model, optional API key, sorting rules, and new-group preference in chrome.storage.local without Chrome Sync. chrome.storage.session retains before/after layouts for undo and recovery, including tab titles, original URLs, identifiers, positions, pinned state, and group metadata. It also retains operation locks to avoid concurrent organization of the same window, and the latest operation's timestamps, stage, and predefined error message for local troubleshooting. Diagnostic records contain no tab content, rules, or API keys. Session data is cleared on browser restart; successful undo removes that window's undo record. API keys are not included in undo records.
 ```
 
 #### tabs が必要な理由
 
 ```text
-Reads titles and URLs, including pending navigation URLs when available, for tabs throughout the user-selected window to plan semantic organization and detect layout changes. Relevant unpinned web tab titles and sanitized URLs are sent to OpenRouter only during user-requested organization or preview. Pinned and non-web tab titles and URLs are excluded from those requests. Full window snapshots remain in local session storage for undo. Access to the active tab alone cannot support window-wide comparisons. The extension does not read page bodies or past browsing history through the History API.
+Reads titles and URLs, including pending navigation URLs when available, for tabs throughout the user-selected window to plan semantic organization and detect layout changes. Relevant unpinned web tab titles and sanitized URLs are sent to the selected Jev provider only during user-requested organization or preview. Pinned and non-web tab titles and URLs are excluded from those requests. Full window snapshots remain in local session storage for undo. Access to the active tab alone cannot support window-wide comparisons. The extension does not read page bodies or past browsing history through the History API.
 ```
 
 #### tabGroups が必要な理由
 
 ```text
-Reads existing tab group names, colors, collapsed states, and identifiers; moves groups as a whole; and restores group metadata during undo. Existing group membership is preserved while sorting tabs within groups. The extension can add ungrouped tabs to matching groups and create new groups when the user's setting and rules allow it. New group names are generated using Chrome's local AI when available. Relevant group names and identifiers are included in OpenRouter decision requests.
+Reads existing tab group names, colors, collapsed states, and identifiers; moves groups as a whole; and restores group metadata during undo. Existing group membership is preserved while sorting tabs within groups. The extension can add ungrouped tabs to matching groups and create new groups when the user's setting and rules allow it. New group names are generated using Chrome's local AI when available. Relevant group names and identifiers are included in requests to the selected Jev provider.
 ```
 
 #### contextMenus が必要な理由
@@ -463,10 +469,10 @@ Adds a page context-menu command to organize the current window and extension-ac
 
 #### ホスト権限 が必要な理由
 
-Scope: `https://openrouter.ai/*`. Paste only the following block into “ホスト権限 が必要な理由”.
+Scope: required `https://openrouter.ai/*`, plus optional `https://*/*` and `http://*/*` requested for a chosen custom origin. Paste only the following block into “ホスト権限 が必要な理由”.
 
 ```text
-Allows HTTPS requests to OpenRouter's decision API at https://openrouter.ai/api/alpha/decisions for user-requested organization, previews, and connection tests. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. The user's API key is sent in the authentication header. Connection tests send fixed test data, not tab metadata. This host access is limited to the OpenRouter API; no content scripts or arbitrary website access are requested. Responses contain decision data, not executable code.
+Allows Jev decision requests to OpenRouter or TypeSafe for organization, previews, and connection tests. TypeSafe and Custom / Local request optional host access only for the selected endpoint's origin when saving or testing. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. A supplied API key is sent in the authentication header. Connection tests send fixed data, not tab metadata. Keyless Custom HTTP endpoints are supported for local or compatible servers; keyed endpoints require HTTPS. Redirects are not followed. The optional HTTP/HTTPS patterns permit selecting a host; they do not grant access to all sites on installation. Responses contain decision data, not executable code. No content scripts are requested.
 ```
 
 #### リモートコード
@@ -480,21 +486,21 @@ Select “いいえ” explicitly; do not retain the form’s initial “はい�
 
 ### データ使用
 
-The selections below reflect the implemented data flows, including local processing. They must agree with [PRIVACY.md](PRIVACY.md). The reference project's answers cannot be copied unchanged: this extension handles API credentials and sends tab metadata to OpenRouter.
+The selections below reflect the implemented data flows, including local processing. They must agree with [PRIVACY.md](PRIVACY.md). The reference project's answers cannot be copied unchanged: this extension handles API credentials and sends tab metadata to the selected Jev provider.
 
-| ユーザーデータの種類         | 選択   | Note (do not paste)                                                                                                                 |
-| ---------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 個人を特定できる情報         | オフ   | No dedicated collection of names, email addresses, or personal identifiers.                                                         |
-| 健康に関する情報             | オフ   | No collection of medical records or health measurements.                                                                            |
-| 財務状況や支払いに関する情報 | オフ   | No access to payment forms, financial accounts, or transaction records.                                                             |
-| 認証に関する情報             | オン   | OpenRouter API key stored locally and transmitted for authentication.                                                               |
-| 個人的コミュニケーション     | オフ   | Email and chat bodies are not read.                                                                                                 |
-| 位置情報                     | 要確認 | The extension does not obtain location data. Confirm how OpenRouter handles API request IP addresses before deciding this checkbox. |
-| ウェブ履歴                   | オン   | Open tab URLs and titles are read, stored for undo, and sanitized for OpenRouter requests.                                          |
-| ユーザーのアクティビティ     | オフ   | No browsing interaction tracking, clickstream, scroll, or keystroke logging. Local operation state supports organization and undo.  |
-| ウェブサイトのコンテンツ     | オフ   | Page bodies, images, audio, and video are not read. Tab titles are disclosed under web history.                                     |
+| ユーザーデータの種類         | 選択   | Note (do not paste)                                                                                                                            |
+| ---------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 個人を特定できる情報         | オフ   | No dedicated collection of names, email addresses, or personal identifiers.                                                                    |
+| 健康に関する情報             | オフ   | No collection of medical records or health measurements.                                                                                       |
+| 財務状況や支払いに関する情報 | オフ   | No access to payment forms, financial accounts, or transaction records.                                                                        |
+| 認証に関する情報             | オン   | Selected provider API key stored locally and transmitted when supplied.                                                                        |
+| 個人的コミュニケーション     | オフ   | Email and chat bodies are not read.                                                                                                            |
+| 位置情報                     | 要確認 | The extension does not obtain location data. Confirm how the selected providers handle API request IP addresses before deciding this checkbox. |
+| ウェブ履歴                   | オン   | Open tab URLs and titles are read, stored for undo, and sanitized for requests to the selected Jev provider.                                   |
+| ユーザーのアクティビティ     | オフ   | No browsing interaction tracking, clickstream, scroll, or keystroke logging. Local operation state supports organization and undo.             |
+| ウェブサイトのコンテンツ     | オフ   | Page bodies, images, audio, and video are not read. Tab titles are disclosed under web history.                                                |
 
-These selections classify the implemented data handling rather than every type of information that could incidentally appear in tab metadata or custom rules. Local processing and transmission to OpenRouter remain part of the disclosure. The location checkbox is unresolved: OpenRouter's handling of API request IP addresses requires review, and this alone does not establish the required selection for this API integration. “要確認” is not a form value; resolve it before transferring that row or submitting for review. See the [User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [privacy-field guide](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy), and [OpenRouter Privacy Policy](https://openrouter.ai/privacy).
+These selections classify the implemented data handling rather than every type of information that could incidentally appear in tab metadata or custom rules. Local processing and transmission to the selected Jev provider remain part of the disclosure. The location checkbox is unresolved: Provider handling of API request IP addresses requires review before deciding the required selection for this API integration. “要確認” is not a form value; resolve it before transferring that row or submitting for review. See the [User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [privacy-field guide](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy), and [OpenRouter Privacy Policy](https://openrouter.ai/privacy).
 
 | 開示事項                                                                         | 選択 |
 | -------------------------------------------------------------------------------- | ---- |

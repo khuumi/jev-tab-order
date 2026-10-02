@@ -13,6 +13,7 @@ body {
 }
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -40,6 +41,7 @@ button.primary:hover:not(:disabled) {
   background: #1e4938;
 }
 input:not([type="checkbox"]),
+select,
 textarea {
   display: block;
   width: 100%;
@@ -116,6 +118,7 @@ a {
 }
 .settings-page button,
 .settings-page input:not([type="checkbox"]),
+.settings-page select,
 .settings-page textarea {
   border-radius: 5px;
   padding: 7px 10px;

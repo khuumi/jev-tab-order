@@ -62,7 +62,7 @@ export default () => {
     controller.current = new AbortController();
     const signal = controller.current.signal;
     const settings = await getSettings();
-    const judge = createJudge(settings.apiKey, signal);
+    const judge = createJudge(settings, signal);
     const before = await capture(target);
     if ((await readUndo(target))?.pending) throw new Error("pendingRecovery");
     if (!before.tabs.some(isEligible)) {
