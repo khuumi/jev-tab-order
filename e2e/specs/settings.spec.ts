@@ -26,7 +26,7 @@ test("compact settings fit one screen and preserve editing and disclosures", asy
   await page.getByText("View default rules", { exact: true }).click();
   await page.getByLabel("Allow new groups", { exact: true }).uncheck();
   await expect(page.getByText(/Chrome AI is/)).toHaveCount(0);
-  await page.getByLabel("Jev API key", { exact: true }).fill("test-key");
+  await page.getByLabel("OpenRouter API key", { exact: true }).fill("test-key");
   await rules.fill("Keep matching domains adjacent.");
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Settings saved");

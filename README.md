@@ -25,7 +25,7 @@ A Chrome extension that uses [Jev](https://typesafe.ai/) to organize tabs and gr
 ## Getting Started
 
 1. Install the extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/jev-tab-order/afbcjklgfmfokamphkgclkocfhgablka).
-2. Open the extension's settings and save your TypeSafe Jev API key.
+2. Open the extension's settings and save your OpenRouter API key.
 3. Click the toolbar icon in the window you want to organize. No popup opens; the icon shows “…” while running and “✓” on completion, then clears the badge after three seconds. You can also use the page context menu or a configured shortcut.
 
 See [supported languages](locales/).
@@ -34,7 +34,9 @@ For installation from source, see [Manual Installation](#manual-installation).
 
 ### Settings
 
-- **Jev API key**: Stored on this device only. API usage may incur charges. Each organization or preview sends at most one Jev request; undo sends none.
+Use an [OpenRouter API key](https://openrouter.ai/settings/keys); existing TypeSafe keys must be replaced in Settings. The Jev model is unchanged and is accessed through [OpenRouter’s Decisions API](https://openrouter.ai/blog/insights/what-is-jev/).
+
+- **OpenRouter API key**: Stored on this device only. API usage may incur charges. Each organization or preview sends at most one Jev request; undo sends none.
 - **Sorting rules**: Leave blank to use the defaults. Custom text replaces the entire default rule. Example: “Put official documentation before tutorials. Order groups as Development, Research, Personal. Do not create new groups.”
 - **Allow new groups**: New groups require permission from both this setting and the rules, multiple related ungrouped tabs, and available Chrome built-in AI for naming. Use the preparation button in settings if the model needs an initial download.
 
@@ -54,7 +56,7 @@ For example, if Jev selects “GitHub” as an ungrouped tab's destination and t
 
 ### What the Jev Request Contains
 
-The extension uses the official `@typesafe-ai/sdk` to send JSON to `POST https://api.typesafe.ai/v1/systemone` with `model: "jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **One API call contains many questions**, prepared together before sending.
+The extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **One API call contains many questions**, prepared together before sending.
 
 - **`state` — information to judge:** The active rules, web tab IDs, titles, sanitized URLs, and group memberships; existing group names and member IDs; and the current sequence of groups and ungrouped tabs. Detailed tab information is shared across questions.
 - **`questions` — what to decide:** Each question contains `type` (Choice or Score), `instructions` (the judgment to make under the rules), and `criteria` (available choices or ordered scoring levels).
@@ -71,7 +73,7 @@ Choice returns the selected ID in `choice`; the extension uses it to connect tab
 
 ### Minimal Request and Response Example
 
-This example has two unpinned tabs: tab `1` (GitHub) in existing group `7` (GitHub), followed by ungrouped tab `2` (GitHub Docs). The custom rule is “Add GitHub tabs to the GitHub group. Put documentation first.” and new group creation is disabled. The request below is the complete JSON body captured by running `buildPlan` and the official SDK for this input. All six questions and their actual instructions are included; no fields or questions are omitted.
+This example has two unpinned tabs: tab `1` (GitHub) in existing group `7` (GitHub), followed by ungrouped tab `2` (GitHub Docs). The custom rule is “Add GitHub tabs to the GitHub group. Put documentation first.” and new group creation is disabled. The request below is the complete JSON body produced by `buildPlan` and the OpenRouter transport for this input. All six questions and their actual instructions are included; no fields or questions are omitted.
 
 `state.blocks` lists the current window-level movement units in order: each existing group is one block, and each ungrouped tab is one block. `key` identifies the block, `title` is its group name (empty for ungrouped tabs), and `tabIds` references the detailed entries in `state.tabs`. Jev uses these units to judge the order and adjacency of whole groups and ungrouped tabs.
 
@@ -179,7 +181,7 @@ The prose in the example rules, `instructions`, `criteria`, and `legend` follows
       }
     }
   },
-  "model": "jev-latest"
+  "model": "~typesafe/jev-latest"
 }
 ```
 
@@ -187,7 +189,7 @@ The prose in the example rules, `instructions`, `criteria`, and `legend` follows
 
 ```json
 {
-  "model": "jev-latest",
+  "model": "~typesafe/jev-latest",
   "answers": {
     "rank_tab_1": {
       "type": "score",

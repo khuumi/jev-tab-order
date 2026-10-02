@@ -1,4 +1,4 @@
-import type { EntryType } from "@typesafe-ai/sdk";
+type EntryType = string | number | boolean | null | EntryType[] | { [key: string]: EntryType };
 
 export type Settings = { apiKey: string; rules: string; allowNewGroups: boolean };
 export type Tab = {

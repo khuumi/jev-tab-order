@@ -28,7 +28,7 @@ Copy only fenced text into text fields and only the value column into selection 
 | 公開鍵                    | 公開鍵を表示                                                                                                            | 表示のみ                 |
 | 検証済み CRX アップロード | 無効のまま維持                                                                                                          | 「有効にする」は押さない |
 
-The host permission covers `https://api.typesafe.ai/*`; it is not a separate package form field. The “公開済み” section is read-only.
+The host permission covers `https://openrouter.ai/*`; it is not a separate package form field. The “公開済み” section is read-only.
 
 ## ストアの掲載情報
 
@@ -70,7 +70,7 @@ FEATURES
 ・Interfaces in 10 languages
 
 HOW TO USE
-1. Open Settings from the extension icon's context menu and save your TypeSafe Jev API key.
+1. Open Settings from the extension icon's context menu and save your OpenRouter API key.
 2. Enter custom rules if needed and choose whether to allow new groups. Leave rules blank to use the defaults, then save settings.
 3. Click the toolbar icon in the window you want to organize. No popup opens; a completion badge disappears after three seconds.
 4. To preview first, use Preview current window in Settings. Preview calls Jev but does not move tabs until you apply the layout.
@@ -102,7 +102,7 @@ Jev Tab OrderはJevを利用し、現在のChromeウィンドウのタブを話�
 ・10言語に対応した画面
 
 使い方
-1. 拡張機能アイコンの右クリックメニューから設定を開き、TypeSafe JevのAPIキーを保存します。
+1. 拡張機能アイコンの右クリックメニューから設定を開き、OpenRouter APIキーを保存します。
 2. 必要に応じてルールを入力し、新規グループを許可するかを選んで保存します。ルールが空欄なら既定ルールを使用します。
 3. 整理したいウィンドウでツールバーアイコンをクリックします。ポップアップは開かず、完了バッジは3秒後に消えます。
 4. 先に確認する場合は設定画面のプレビューを使います。Jevへの通信は発生しますが、適用するまでタブは移動しません。
@@ -134,7 +134,7 @@ FUNKTIONEN
 ・Oberfläche in 10 Sprachen
 
 VERWENDUNG
-1. Öffnen Sie die Einstellungen über das Kontextmenü des Erweiterungssymbols und speichern Sie Ihren TypeSafe-Jev-API-Schlüssel.
+1. Öffnen Sie die Einstellungen über das Kontextmenü des Erweiterungssymbols und speichern Sie Ihren OpenRouter-API-Schlüssel.
 2. Geben Sie bei Bedarf eigene Regeln ein und legen Sie fest, ob neue Gruppen erlaubt sind. Lassen Sie das Regelfeld für Standardregeln leer und speichern Sie die Einstellungen.
 3. Klicken Sie im gewünschten Fenster auf das Symbol in der Symbolleiste. Es öffnet sich kein Popup; die Abschlussanzeige verschwindet nach drei Sekunden.
 4. Für eine Vorschau verwenden Sie die Vorschaufunktion in den Einstellungen. Die Vorschau ruft Jev auf, verschiebt aber keine Tabs, bis Sie die Anordnung anwenden.
@@ -166,7 +166,7 @@ FUNCIONES
 ・Interfaz en 10 idiomas
 
 CÓMO USAR
-1. Abre Configuración desde el menú contextual del icono de la extensión y guarda tu clave API de TypeSafe Jev.
+1. Abre Configuración desde el menú contextual del icono de la extensión y guarda tu clave API de OpenRouter.
 2. Introduce reglas personalizadas si lo necesitas y elige si permites nuevos grupos. Deja las reglas vacías para usar las predeterminadas y guarda la configuración.
 3. Haz clic en el icono de la barra de herramientas de la ventana que quieras organizar. No se abre ninguna ventana emergente; el indicador de finalización desaparece tras tres segundos.
 4. Para ver una vista previa, usa la opción correspondiente en Configuración. La vista previa consulta a Jev, pero no mueve pestañas hasta que apliques la disposición.
@@ -198,7 +198,7 @@ FONCTIONNALITÉS
 ・Interface en 10 langues
 
 UTILISATION
-1. Ouvrez les paramètres depuis le menu contextuel de l’icône de l’extension et enregistrez votre clé API TypeSafe Jev.
+1. Ouvrez les paramètres depuis le menu contextuel de l’icône de l’extension et enregistrez votre clé API OpenRouter.
 2. Saisissez vos règles si nécessaire et choisissez d’autoriser ou non les nouveaux groupes. Laissez les règles vides pour utiliser celles par défaut, puis enregistrez.
 3. Cliquez sur l’icône de la barre d’outils dans la fenêtre à organiser. Aucune fenêtre contextuelle ne s’ouvre ; le badge de fin disparaît après trois secondes.
 4. Pour un aperçu, utilisez la fonction correspondante dans les paramètres. L’aperçu appelle Jev mais ne déplace aucun onglet avant l’application de la disposition.
@@ -230,7 +230,7 @@ Jev API 요청 한 번으로 창 전체의 그룹 배정과 정렬을 함께 판
 ・10개 언어의 인터페이스
 
 사용 방법
-1. 확장 프로그램 아이콘의 우클릭 메뉴에서 설정을 열고 TypeSafe Jev API 키를 저장합니다.
+1. 확장 프로그램 아이콘의 우클릭 메뉴에서 설정을 열고 OpenRouter API 키를 저장합니다.
 2. 필요하면 규칙을 입력하고 새 그룹 허용 여부를 선택한 후 저장합니다. 규칙을 비워 두면 기본 규칙을 사용합니다.
 3. 정리할 창에서 툴바 아이콘을 클릭합니다. 팝업은 열리지 않으며 완료 배지는 3초 후에 사라집니다.
 4. 먼저 확인하려면 설정에서 현재 창 미리보기를 사용합니다. 미리보기는 Jev를 호출하지만 배치를 적용하기 전에는 탭을 이동하지 않습니다.
@@ -262,7 +262,7 @@ RECURSOS
 ・Interface em 10 idiomas
 
 COMO USAR
-1. Abra as Configurações pelo menu de contexto do ícone da extensão e salve sua chave de API do TypeSafe Jev.
+1. Abra as Configurações pelo menu de contexto do ícone da extensão e salve sua chave de API do OpenRouter.
 2. Insira regras personalizadas se necessário e escolha se deseja permitir novos grupos. Deixe as regras em branco para usar as padrão e salve as configurações.
 3. Clique no ícone da barra de ferramentas na janela que deseja organizar. Nenhuma janela pop-up será aberta; o indicador de conclusão desaparece após três segundos.
 4. Para visualizar antes, use a opção de visualização nas Configurações. A visualização consulta o Jev, mas não move abas até você aplicar a disposição.
@@ -294,7 +294,7 @@ Jev Tab Order использует Jev для упорядочивания вк�
 ・Интерфейс на 10 языках
 
 КАК ИСПОЛЬЗОВАТЬ
-1. Откройте настройки через контекстное меню значка расширения и сохраните API-ключ TypeSafe Jev.
+1. Откройте настройки через контекстное меню значка расширения и сохраните API-ключ OpenRouter.
 2. При необходимости задайте свои правила и выберите, разрешать ли новые группы. Для правил по умолчанию оставьте поле пустым, затем сохраните настройки.
 3. Нажмите значок на панели инструментов в нужном окне. Всплывающее окно не открывается; значок завершения исчезает через три секунды.
 4. Для предварительного просмотра используйте соответствующую функцию в настройках. Предпросмотр обращается к Jev, но не перемещает вкладки до применения расположения.
@@ -326,7 +326,7 @@ Jev Tab Order 使用 Jev，按主题和你指定的排序规则整理当前 Chro
 ・支持 10 种界面语言
 
 使用方法
-1. 从扩展图标的右键菜单打开设置，保存你的 TypeSafe Jev API 密钥。
+1. 从扩展图标的右键菜单打开设置，保存你的 OpenRouter API 密钥。
 2. 根据需要输入自定义规则，并选择是否允许新建分组，然后保存设置。规则留空时使用默认规则。
 3. 在要整理的窗口中点击工具栏图标。不会打开弹出窗口；完成徽标会在三秒后消失。
 4. 如需先预览，请使用设置中的当前窗口预览。预览会调用 Jev，但应用布局之前不会移动标签页。
@@ -358,7 +358,7 @@ Jev Tab Order 使用 Jev，依主題和你指定的排序規則整理目前 Chro
 ・支援 10 種介面語言
 
 使用方法
-1. 從擴充功能圖示的右鍵選單開啟設定，儲存你的 TypeSafe Jev API 金鑰。
+1. 從擴充功能圖示的右鍵選單開啟設定，儲存你的 OpenRouter API 金鑰。
 2. 視需要輸入自訂規則，並選擇是否允許建立新群組，然後儲存設定。規則留空時使用預設規則。
 3. 在要整理的視窗中點選工具列圖示。不會開啟彈出視窗；完成徽章會在三秒後消失。
 4. 如需先預覽，請使用設定中的目前視窗預覽。預覽會呼叫 Jev，但套用配置之前不會移動分頁。
@@ -440,19 +440,19 @@ Maximum: 1,000 characters per field. The five fields below are present for the u
 #### storage が必要な理由
 
 ```text
-Saves the user's TypeSafe API key, sorting rules, and new-group preference in chrome.storage.local without Chrome Sync. chrome.storage.session retains before/after layouts for undo and recovery, including tab titles, original URLs, identifiers, positions, pinned state, and group metadata. It also retains operation locks to avoid concurrent organization of the same window, and the latest operation's timestamps, stage, and predefined error message for local troubleshooting. Diagnostic records contain no tab content, rules, or API keys. Session data is cleared on browser restart; successful undo removes that window's undo record. API keys are not included in undo records.
+Saves the user's OpenRouter API key, sorting rules, and new-group preference in chrome.storage.local without Chrome Sync. chrome.storage.session retains before/after layouts for undo and recovery, including tab titles, original URLs, identifiers, positions, pinned state, and group metadata. It also retains operation locks to avoid concurrent organization of the same window, and the latest operation's timestamps, stage, and predefined error message for local troubleshooting. Diagnostic records contain no tab content, rules, or API keys. Session data is cleared on browser restart; successful undo removes that window's undo record. API keys are not included in undo records.
 ```
 
 #### tabs が必要な理由
 
 ```text
-Reads titles and URLs, including pending navigation URLs when available, for tabs throughout the user-selected window to plan semantic organization and detect layout changes. Relevant unpinned web tab titles and sanitized URLs are sent to TypeSafe only during user-requested organization or preview. Pinned and non-web tab titles and URLs are excluded from those requests. Full window snapshots remain in local session storage for undo. Access to the active tab alone cannot support window-wide comparisons. The extension does not read page bodies or past browsing history through the History API.
+Reads titles and URLs, including pending navigation URLs when available, for tabs throughout the user-selected window to plan semantic organization and detect layout changes. Relevant unpinned web tab titles and sanitized URLs are sent to OpenRouter only during user-requested organization or preview. Pinned and non-web tab titles and URLs are excluded from those requests. Full window snapshots remain in local session storage for undo. Access to the active tab alone cannot support window-wide comparisons. The extension does not read page bodies or past browsing history through the History API.
 ```
 
 #### tabGroups が必要な理由
 
 ```text
-Reads existing tab group names, colors, collapsed states, and identifiers; moves groups as a whole; and restores group metadata during undo. Existing group membership is preserved while sorting tabs within groups. The extension can add ungrouped tabs to matching groups and create new groups when the user's setting and rules allow it. New group names are generated using Chrome's local AI when available. Relevant group names and identifiers are included in TypeSafe decision requests.
+Reads existing tab group names, colors, collapsed states, and identifiers; moves groups as a whole; and restores group metadata during undo. Existing group membership is preserved while sorting tabs within groups. The extension can add ungrouped tabs to matching groups and create new groups when the user's setting and rules allow it. New group names are generated using Chrome's local AI when available. Relevant group names and identifiers are included in OpenRouter decision requests.
 ```
 
 #### contextMenus が必要な理由
@@ -463,10 +463,10 @@ Adds a page context-menu command to organize the current window and extension-ac
 
 #### ホスト権限 が必要な理由
 
-Scope: `https://api.typesafe.ai/*`. Paste only the following block into “ホスト権限 が必要な理由”.
+Scope: `https://openrouter.ai/*`. Paste only the following block into “ホスト権限 が必要な理由”.
 
 ```text
-Allows HTTPS requests to TypeSafe's decision API at https://api.typesafe.ai/v1/systemone for user-requested organization, previews, and connection tests. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. The user's API key is sent in the authentication header. Connection tests send fixed test data, not tab metadata. This host access is limited to the TypeSafe API; no content scripts or arbitrary website access are requested. Responses contain decision data, not executable code.
+Allows HTTPS requests to OpenRouter's decision API at https://openrouter.ai/api/alpha/decisions for user-requested organization, previews, and connection tests. Organization and preview send relevant tab titles, sanitized URL origins and paths, identifiers, group names, and sorting rules. The user's API key is sent in the authentication header. Connection tests send fixed test data, not tab metadata. This host access is limited to the OpenRouter API; no content scripts or arbitrary website access are requested. Responses contain decision data, not executable code.
 ```
 
 #### リモートコード
@@ -480,21 +480,21 @@ Select “いいえ” explicitly; do not retain the form’s initial “はい�
 
 ### データ使用
 
-The selections below reflect the implemented data flows, including local processing. They must agree with [PRIVACY.md](PRIVACY.md). The reference project's answers cannot be copied unchanged: this extension handles API credentials and sends tab metadata to TypeSafe.
+The selections below reflect the implemented data flows, including local processing. They must agree with [PRIVACY.md](PRIVACY.md). The reference project's answers cannot be copied unchanged: this extension handles API credentials and sends tab metadata to OpenRouter.
 
-| ユーザーデータの種類         | 選択   | Note (do not paste)                                                                                                                |
-| ---------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 個人を特定できる情報         | オフ   | No dedicated collection of names, email addresses, or personal identifiers.                                                        |
-| 健康に関する情報             | オフ   | No collection of medical records or health measurements.                                                                           |
-| 財務状況や支払いに関する情報 | オフ   | No access to payment forms, financial accounts, or transaction records.                                                            |
-| 認証に関する情報             | オン   | TypeSafe API key stored locally and transmitted for authentication.                                                                |
-| 個人的コミュニケーション     | オフ   | Email and chat bodies are not read.                                                                                                |
-| 位置情報                     | 要確認 | The extension does not obtain location data. Confirm how TypeSafe handles API request IP addresses before deciding this checkbox.  |
-| ウェブ履歴                   | オン   | Open tab URLs and titles are read, stored for undo, and sanitized for TypeSafe requests.                                           |
-| ユーザーのアクティビティ     | オフ   | No browsing interaction tracking, clickstream, scroll, or keystroke logging. Local operation state supports organization and undo. |
-| ウェブサイトのコンテンツ     | オフ   | Page bodies, images, audio, and video are not read. Tab titles are disclosed under web history.                                    |
+| ユーザーデータの種類         | 選択   | Note (do not paste)                                                                                                                 |
+| ---------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 個人を特定できる情報         | オフ   | No dedicated collection of names, email addresses, or personal identifiers.                                                         |
+| 健康に関する情報             | オフ   | No collection of medical records or health measurements.                                                                            |
+| 財務状況や支払いに関する情報 | オフ   | No access to payment forms, financial accounts, or transaction records.                                                             |
+| 認証に関する情報             | オン   | OpenRouter API key stored locally and transmitted for authentication.                                                               |
+| 個人的コミュニケーション     | オフ   | Email and chat bodies are not read.                                                                                                 |
+| 位置情報                     | 要確認 | The extension does not obtain location data. Confirm how OpenRouter handles API request IP addresses before deciding this checkbox. |
+| ウェブ履歴                   | オン   | Open tab URLs and titles are read, stored for undo, and sanitized for OpenRouter requests.                                          |
+| ユーザーのアクティビティ     | オフ   | No browsing interaction tracking, clickstream, scroll, or keystroke logging. Local operation state supports organization and undo.  |
+| ウェブサイトのコンテンツ     | オフ   | Page bodies, images, audio, and video are not read. Tab titles are disclosed under web history.                                     |
 
-These selections classify the implemented data handling rather than every type of information that could incidentally appear in tab metadata or custom rules. Local processing and transmission to TypeSafe remain part of the disclosure. The location checkbox is unresolved: TypeSafe's general privacy policy mentions collecting IP addresses and inferring location, but this alone does not establish the required selection for this API integration. “要確認” is not a form value; resolve it before transferring that row or submitting for review. See the [User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [privacy-field guide](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy), and [TypeSafe Privacy Policy](https://typesafe.ai/legal/privacy-policy).
+These selections classify the implemented data handling rather than every type of information that could incidentally appear in tab metadata or custom rules. Local processing and transmission to OpenRouter remain part of the disclosure. The location checkbox is unresolved: OpenRouter's handling of API request IP addresses requires review, and this alone does not establish the required selection for this API integration. “要確認” is not a form value; resolve it before transferring that row or submitting for review. See the [User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [privacy-field guide](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy), and [OpenRouter Privacy Policy](https://openrouter.ai/privacy).
 
 | 開示事項                                                                         | 選択 |
 | -------------------------------------------------------------------------------- | ---- |
@@ -519,7 +519,7 @@ These are the intended certifications for the documented implementation, not a r
 | Trusted Tester グループ | なし         |
 | 販売先の国を選択        | すべての地域 |
 
-These values retain the selections currently shown in the dashboard. The extension has no in-app purchase flow; TypeSafe API usage may incur separate charges. Trusted Tester groups apply only when visibility is private.
+These values retain the selections currently shown in the dashboard. The extension has no in-app purchase flow; OpenRouter API usage may incur separate charges. Trusted Tester groups apply only when visibility is private.
 
 ## テスト手順
 
@@ -532,14 +532,14 @@ Maximum: 100 characters each for username and password.
 | ユーザー名 | 空欄                                         |
 | パスワード | ユーザーが直接入力（自動転記では変更しない） |
 
-Supply a review-only TypeSafe API key privately in the password field if it fits the 100-character limit. If it does not fit, resolve a private delivery method before submission; do not truncate the key. This page has its own “変更を保存” button. Listing and privacy pages use “下書きとして保存する”.
+Supply a review-only OpenRouter API key privately in the password field if it fits the 100-character limit. If it does not fit, resolve a private delivery method before submission; do not truncate the key. This page has its own “変更を保存” button. Listing and privacy pages use “下書きとして保存する”.
 
 ### 追加の手順
 
 Maximum: 500 characters. Supply the review credential separately before using this text.
 
 ```text
-Requires Chrome 138+. The Password field contains the review TypeSafe API key. Right-click the extension icon, open Settings, enter the key, and save. Open several web tabs and an existing tab group. In Settings, select Preview current window, then Apply this layout and Undo. The toolbar icon organizes directly. New groups require Allow new groups and available Chrome built-in AI; without the model, sorting still works. Shortcuts: chrome://extensions/shortcuts.
+Requires Chrome 138+. The Password field contains the review OpenRouter API key. Right-click the extension icon, open Settings, enter the key, and save. Open several web tabs and an existing tab group. In Settings, select Preview current window, then Apply this layout and Undo. The toolbar icon organizes directly. New groups require Allow new groups and available Chrome built-in AI; without the model, sorting still works. Shortcuts: chrome://extensions/shortcuts.
 ```
 
 ## Transfer instructions

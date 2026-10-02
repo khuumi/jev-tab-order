@@ -1,4 +1,3 @@
-import { APIError, TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Answer, Choice, Judge, Question } from "@/src/types";
 
 export const parseAnswers = (value: unknown, questions: Record<string, Question>) => {
@@ -73,55 +72,68 @@ export const parseAnswers = (value: unknown, questions: Record<string, Question>
 };
 export const createJudge = (apiKey: string, signal: AbortSignal): Judge => {
   if (!apiKey.trim()) throw new Error("missingKey");
-  const client = new TypeSafeClient({
-    apiKey,
-    baseURL: "https://api.typesafe.ai",
-    defaultModel: "jev-latest",
-    timeout: 25000,
-    retry: { maxRetries: 0 },
-    logLevel: "off",
-    // Users supply their own key in the extension's settings.
-    dangerouslyAllowBrowser: true,
-  });
   return async (state, questions) => {
     if (!Object.keys(questions).length) return {};
-    signal.throwIfAborted();
-    const sdkQuestions = Object.fromEntries(
-      Object.entries(questions).map(([id, question]) => {
-        if (question.type === "choice") return [id, question];
-        const [first, second, ...rest] = question.criteria;
-        if (first === undefined || second === undefined) throw new Error("invalidResponse");
-        return [id, { ...question, criteria: [first, second, ...rest] as const }];
-      }),
-    );
-    let data: unknown;
+    if (signal.aborted) throw new Error("cancelled");
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    signal.addEventListener("abort", cancel, { once: true });
+    const timeout = setTimeout(cancel, 25000);
     try {
-      data = await client.systemOne({ state, questions: sdkQuestions }, { signal });
-    } catch (error) {
+      let response: Response;
+      try {
+        response = await fetch("https://openrouter.ai/api/alpha/decisions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey.trim()}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({ model: "~typesafe/jev-latest", state, questions }),
+        });
+      } catch {
+        throw new Error(signal.aborted ? "cancelled" : "networkError");
+      }
       if (signal.aborted) throw new Error("cancelled");
-      if (error instanceof APIError) {
-        const body = error.body;
-        const detail = body && typeof body === "object" && "detail" in body ? body.detail : null;
-        const tokenLimit =
-          error.status === 400 &&
-          detail &&
-          typeof detail === "object" &&
-          "error_type" in detail &&
-          detail.error_type === "max_tokens_exceeded";
+      if (!response.ok) {
+        let tokenLimit = response.status === 413;
+        if (response.status === 400) {
+          try {
+            const body = await response.json();
+            tokenLimit = body?.detail?.error_type === "max_tokens_exceeded";
+          } catch {
+            if (signal.aborted) throw new Error("cancelled");
+          }
+        }
         throw new Error(
           tokenLimit
             ? "tokenLimit"
-            : error.status === 401 || error.status === 403
+            : response.status === 401 || response.status === 403
               ? "invalidKey"
-              : error.status === 429
+              : response.status === 429
                 ? "rateLimited"
                 : "apiError",
-          { cause: { httpStatus: error.status } },
+          { cause: { httpStatus: response.status } },
         );
       }
-      throw new Error("networkError");
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          signal.aborted
+            ? "cancelled"
+            : controller.signal.aborted
+              ? "networkError"
+              : "invalidResponse",
+        );
+      }
+      if (signal.aborted) throw new Error("cancelled");
+      return parseAnswers(data, questions);
+    } finally {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", cancel);
     }
-    return parseAnswers(data, questions);
   };
 };
 

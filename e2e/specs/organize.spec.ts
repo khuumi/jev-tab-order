@@ -12,7 +12,7 @@ test("preview, grouping, ordering, undo and stale-preview protection", async ({
     }),
   );
   let requests = 0;
-  await context.route("https://api.typesafe.ai/**", (route) => {
+  await context.route("https://openrouter.ai/api/alpha/decisions", (route) => {
     requests++;
     const { state, questions } = route.request().postDataJSON();
     const answers = Object.fromEntries(
@@ -155,7 +155,7 @@ test("preview, grouping, ordering, undo and stale-preview protection", async ({
   await expect(second.getByRole("alert")).toBeVisible();
   expect(await snapshot()).toEqual(before);
   await second.close();
-  await context.route("https://api.typesafe.ai/**", (route) =>
+  await context.route("https://openrouter.ai/api/alpha/decisions", (route) =>
     route.fulfill({ status: 401, json: { error: "unauthorized" } }),
   );
   const failurePromise = context.waitForEvent("page");
