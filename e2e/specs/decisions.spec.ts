@@ -113,7 +113,7 @@ for (const scenario of scenarios) {
         },
       });
     }, "namingFailure" in scenario);
-    await context.route("https://api.typesafe.ai/**", (route) => {
+    await context.route("https://openrouter.ai/api/alpha/decisions", (route) => {
       const { state, questions } = route.request().postDataJSON();
       const answers = Object.fromEntries(
         Object.entries(

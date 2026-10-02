@@ -143,7 +143,7 @@ it.each([
   expect(() => parseAnswers(response, questions)).toThrow("invalidResponse");
 });
 
-it.each([400, 403, 413, 422, 429, 503, 529, 500])(
+it.each([400, 402, 403, 422, 429, 503, 529, 500])(
   "reports HTTP %s without automatic retry",
   async (status) => {
     const fetch = vi.fn().mockResolvedValue(new Response("private server body", { status }));
@@ -190,7 +190,7 @@ it("sends the full state and all questions in one request", async () => {
   expect(await createJudge("key", new AbortController().signal)(state, many)).toEqual(answers);
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({
-    model: "jev-latest",
+    model: "~typesafe/jev-latest",
     state,
     questions: many,
   });
@@ -232,7 +232,7 @@ it("times out after 25 seconds without retrying", async () => {
   }
 });
 
-it("authenticates with the user's key through the SDK in a browser runtime", async () => {
+it("authenticates with the user's key through OpenRouter in a browser runtime", async () => {
   vi.stubGlobal("window", {});
   vi.stubGlobal("document", {});
   const fetch = vi.fn().mockResolvedValue(Response.json(valid));
@@ -242,9 +242,47 @@ it("authenticates with the user's key through the SDK in a browser runtime", asy
   );
   expect(fetch).toHaveBeenCalledTimes(1);
   const [url, init] = fetch.mock.calls[0];
-  expect(url).toBe("https://api.typesafe.ai/v1/systemone");
+  expect(url).toBe("https://openrouter.ai/api/alpha/decisions");
   expect(init.method).toBe("POST");
   const headers = new Headers(init.headers);
   expect(headers.get("Authorization")).toBe("Bearer user-key");
   expect(headers.get("Content-Type")).toBe("application/json");
+});
+
+it("maps oversized OpenRouter requests to the input-limit error", async () => {
+  const fetch = vi.fn().mockResolvedValue(new Response("private data", { status: 413 }));
+  vi.stubGlobal("fetch", fetch);
+  await expect(
+    createJudge("key", new AbortController().signal)({}, questions),
+  ).rejects.toMatchObject({ message: "tokenLimit", cause: { httpStatus: 413 } });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it("cancels while reading the response body", async () => {
+  const controller = new AbortController();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        controller.abort();
+        throw new Error("private data");
+      },
+    }),
+  );
+  await expect(createJudge("key", controller.signal)({}, questions)).rejects.toThrow("cancelled");
+});
+
+it("clears the request timeout after success", async () => {
+  vi.useFakeTimers();
+  try {
+    const fetch = vi.fn().mockResolvedValue(Response.json(valid));
+    vi.stubGlobal("fetch", fetch);
+    await createJudge("key", new AbortController().signal)({}, questions);
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(25000);
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(false);
+  } finally {
+    vi.useRealTimers();
+  }
 });
