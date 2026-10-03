@@ -163,7 +163,9 @@ const scopeState = (state: State, questions: Questions): State => {
     typeof entry === "object" &&
     !Array.isArray(entry) &&
     (keys.has(String(entry.key)) ||
-      (Array.isArray(entry.tabIds) && entry.tabIds.some((id) => ids.has(String(id)))));
+      (String(entry.key).startsWith("topic_") &&
+        Array.isArray(entry.tabIds) &&
+        entry.tabIds.some((id) => ids.has(String(id)))));
   const groups = state.groups.filter(selected);
   const blocks = state.blocks.filter(selected);
   for (const entry of [...groups, ...blocks]) {

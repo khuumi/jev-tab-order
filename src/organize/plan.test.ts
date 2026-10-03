@@ -111,30 +111,29 @@ describe("organization constraints", () => {
       })),
     };
     const inspect = vi.fn<Judge>(async (state, questions) => {
-      expect(questions.membership_5).toMatchObject({
-        instructions: expect.stringContaining("Domain: proshunsuke.github.io"),
-        criteria: { none: "Keep ungrouped", group_7: 'Group name: "GitHub \\"work\\""' },
-      });
-      expect(questions.topic_5).toMatchObject({
-        instructions: expect.stringContaining("Domain: proshunsuke.github.io"),
-        criteria: {
-          self: "No matching candidate",
-          "3": "Domain: issue.test",
-          "4": "Domain: github.com",
-        },
-      });
-      expect(questions.related_topic_5).toMatchObject({
-        criteria: {
-          self: "Keep separate",
-          group_7: 'Group name: "GitHub \\"work\\""',
-          topic_3: "Domain: issue.test",
-          topic_4: "Domain: github.com",
-        },
-      });
-      expect(questions.rank_tab_4.instructions).toContain("Domain: github.com");
-      expect(questions.rank_block_group_7.instructions).toContain(
-        'Group name: "GitHub \\"work\\""',
-      );
+      if (questions.membership_5)
+        expect(questions.membership_5).toMatchObject({
+          instructions: expect.stringContaining("Domain: proshunsuke.github.io"),
+          criteria: { none: "Keep ungrouped", group_7: 'Group name: "GitHub \\"work\\""' },
+        });
+      if (questions.topic_5)
+        expect(questions.topic_5).toMatchObject({
+          instructions: expect.stringContaining("Domain: proshunsuke.github.io"),
+          criteria: {
+            self: "No matching candidate",
+            "3": "Domain: issue.test",
+            "4": "Domain: github.com",
+          },
+        });
+      if (questions.related_topic_5)
+        expect(questions.related_topic_5).toMatchObject({
+          criteria: {
+            self: "Keep separate",
+            group_7: 'Group name: "GitHub \\"work\\""',
+            topic_3: "Domain: issue.test",
+            topic_4: "Domain: github.com",
+          },
+        });
       expect(JSON.stringify({ state, questions })).not.toContain("PRIVATE_");
       return judge(state, questions);
     });
@@ -145,7 +144,7 @@ describe("organization constraints", () => {
       async () => "Unused",
       () => {},
     );
-    expect(inspect).toHaveBeenCalledTimes(1);
+    expect(inspect).toHaveBeenCalledTimes(5);
     expect(result.blocks.map((block) => block.tabIds)).toEqual([
       [2, 3],
       [4, 5],
@@ -596,7 +595,7 @@ it.each([4, 50, 100, 201])(
         async () => "Group",
         () => {},
       );
-      if (count === 4) expect(fetch).toHaveBeenCalledTimes(1);
+      if (count === 4) expect(fetch).toHaveBeenCalledTimes(5);
       if (count > 4) expect(fetch.mock.calls.length).toBeGreaterThan(1);
       for (const call of fetch.mock.calls)
         expect(new TextEncoder().encode(String(call[1].body)).length).toBeLessThanOrEqual(64000);
@@ -618,8 +617,8 @@ it.each([4, 50, 100, 201])(
           expect(question.criteria).toHaveLength(5);
         }
       }
-      expect(payload.questions).toHaveProperty("rank_tab_10");
-      expect(payload.questions).toHaveProperty("rank_block_group_7");
+      expect(payload.questions).not.toHaveProperty("rank_tab_10");
+      expect(payload.questions).not.toHaveProperty("rank_block_group_7");
       expect(payload.questions).toHaveProperty("membership_12");
       expect(payload.questions).toHaveProperty("topic_13");
       expect(Object.keys(payload.questions).length).toBeLessThan(count * 5 + 1);
@@ -692,3 +691,143 @@ it("accepts moderate-confidence memberships and adjacency from Jev", async () =>
     [4, 5],
   ]);
 });
+
+it("ranks tabs only against final container peers after membership resolves", async () => {
+  const states: { state: unknown; questions: Record<string, unknown> }[] = [];
+  await buildPlan(
+    before,
+    DEFAULT_SETTINGS,
+    async (state, questions) => {
+      states.push({ state, questions });
+      return judge(state, questions);
+    },
+    async () => "Unused",
+    () => {},
+  );
+  const ranking = states.filter(({ questions }) =>
+    Object.keys(questions).some((key) => key.startsWith("rank_tab_")),
+  );
+  expect(ranking).toHaveLength(2);
+  expect(ranking[0].state).toMatchObject({ tabs: [{ id: "2" }, { id: "3" }] });
+  expect(ranking[1].state).toMatchObject({ tabs: [{ id: "4" }, { id: "5" }] });
+  expect(
+    ranking.every(
+      ({ state }) => !("blocks" in (state as object)) && !("groups" in (state as object)),
+    ),
+  ).toBe(true);
+  const blocks = states.find(({ questions }) =>
+    Object.keys(questions).some((key) => key.startsWith("rank_block_")),
+  )!;
+  expect(blocks.state).not.toHaveProperty("tabs");
+  expect(blocks.state).toMatchObject({
+    blocks: [
+      { key: "group_7", representatives: [{ id: "2" }, { id: "3" }] },
+      { key: "topic_4", representatives: [{ id: "4" }, { id: "5" }] },
+    ],
+  });
+});
+
+it.each([false, true])(
+  "plans realistic oversized metadata through bounded requests before naming (grouped: %s)",
+  async (grouped) => {
+    const { createJudge } = await import("@/src/ai/jev");
+    const { createDecisionProvider } = await import("@/src/ai/providers");
+    const { describe: describeTab } = await import("@/src/tabs/snapshot");
+    const source: Snapshot = {
+      windowId: 1,
+      groups: grouped
+        ? [7, 8].map((id) => ({
+            id,
+            title: `Engineering ${id}`,
+            color: "blue" as const,
+            collapsed: false,
+          }))
+        : [],
+      tabs: Array.from({ length: 240 }, (_, index) => ({
+        id: index + 1,
+        index,
+        pinned: false,
+        groupId: grouped ? (index < 120 ? 7 : 8) : -1,
+        title: `Production architecture documentation ${index}: distributed systems, observability, incident response and performance tuning for enterprise services`,
+        url: `https://documentation.example.test/engineering/platform/distributed-systems/observability/incident-response/performance/production-services/reference/${index}/detailed-design?tracking=private`,
+      })),
+    };
+    const settings = { ...DEFAULT_SETTINGS, apiKey: "test", allowNewGroups: true };
+    const signal = new AbortController().signal;
+    const provider = createDecisionProvider(settings, signal);
+    expect(
+      provider.requestBytes({ state: { tabs: source.tabs.map(describeTab) }, questions: {} }),
+    ).toBeGreaterThan(64000);
+    let completedRanking = false;
+    const naming = vi.fn(async () => {
+      expect(completedRanking).toBe(true);
+      return "Engineering";
+    });
+    const fetch = vi.fn(async (_url, init: RequestInit) => {
+      const payload = JSON.parse(String(init.body));
+      expect(provider.requestBytes(payload)).toBeLessThanOrEqual(64000);
+      expect(naming).not.toHaveBeenCalled();
+      const answers = await judge(payload.state, payload.questions);
+      for (const [key, question] of Object.entries(
+        payload.questions as Record<string, import("@/src/types").Question>,
+      )) {
+        if (key.startsWith("topic_") && question.type === "choice") {
+          const choice = Object.keys(question.criteria).find((key) => key !== "self") ?? "self";
+          answers[key] = {
+            type: "choice",
+            choice,
+            confidence: 1,
+            probabilities: Object.fromEntries(
+              Object.keys(question.criteria).map((key) => [key, key === choice ? 1 : 0]),
+            ),
+          };
+        }
+      }
+      return Response.json({ answers });
+    });
+    vi.stubGlobal("fetch", fetch);
+    try {
+      const realJudge = createJudge(settings, signal);
+      const result = await buildPlan(
+        source,
+        settings,
+        async (state, questions) => {
+          const answers = await realJudge(state, questions);
+          if (Object.keys(questions).some((key) => key.startsWith("rank_tab_")))
+            completedRanking = true;
+          return answers;
+        },
+        naming,
+        () => {},
+      );
+      const ids = result.blocks.flatMap((block) => block.tabIds);
+      expect(ids).toHaveLength(240);
+      expect(new Set(ids).size).toBe(240);
+      expect(fetch.mock.calls.length).toBeGreaterThan(1);
+      expect(naming).toHaveBeenCalledTimes(grouped ? 0 : 1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);
+
+it.each(["tokenLimit", "cancelled", "invalidKey"])(
+  "never names a group when later block ranking fails with %s",
+  async (message) => {
+    const naming = vi.fn(async () => "Travel");
+    await expect(
+      buildPlan(
+        before,
+        { ...DEFAULT_SETTINGS, allowNewGroups: true },
+        async (state, questions) => {
+          if (Object.keys(questions).some((key) => key.startsWith("rank_block_")))
+            throw new Error(message);
+          return judge(state, questions);
+        },
+        naming,
+        () => {},
+      ),
+    ).rejects.toThrow(message);
+    expect(naming).not.toHaveBeenCalled();
+  },
+);

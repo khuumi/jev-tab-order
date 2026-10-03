@@ -141,21 +141,8 @@ for (const scenario of scenarios) {
                 ? "keep"
                 : String(
                     scenario.choice === "reverse"
-                      ? 10 -
-                          rank(
-                            "tabIds" in item
-                              ? item.tabIds.map((id: string) =>
-                                  state.tabs.find((tab: { id: string }) => tab.id === id),
-                                )
-                              : item,
-                          )
-                      : rank(
-                          "tabIds" in item
-                            ? item.tabIds.map((id: string) =>
-                                state.tabs.find((tab: { id: string }) => tab.id === id),
-                              )
-                            : item,
-                        ) - 1,
+                      ? 10 - rank("representatives" in item ? item.representatives : item)
+                      : rank("representatives" in item ? item.representatives : item) - 1,
                   );
             confidence = scenario.confidence;
           }

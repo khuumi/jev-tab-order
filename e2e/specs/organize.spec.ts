@@ -123,7 +123,7 @@ test("preview, grouping, ordering, undo and stale-preview protection", async ({
   await options.getByRole("button", { name: "Preview current window", exact: true }).click();
   const popup = await popupPromise;
   await expect(popup.getByRole("button", { name: "Apply this layout", exact: true })).toBeVisible();
-  expect(requests).toBe(1);
+  expect(requests).toBe(5);
   expect(await snapshot()).toEqual(before);
   await popup.screenshot({ path: testInfo.outputPath("preview.png"), fullPage: true });
   await popup.getByRole("button", { name: "Apply this layout", exact: true }).click();
@@ -141,7 +141,7 @@ test("preview, grouping, ordering, undo and stale-preview protection", async ({
   ).toBeVisible();
   expect(await snapshot()).toEqual(before);
   await popup.close();
-  expect(requests).toBe(1);
+  expect(requests).toBe(5);
   const secondPromise = context.waitForEvent("page");
   await options.getByRole("button", { name: "Preview current window", exact: true }).click();
   const second = await secondPromise;

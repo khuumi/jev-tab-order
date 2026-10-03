@@ -78,8 +78,12 @@ export const createJudge = (
   options: { maxRequestBytes?: number; onRequest?: (count: number) => void } = {},
 ): Judge => {
   const provider = createDecisionProvider(settings, signal);
+  let requests = 0;
   return (state, questions) =>
-    decideBatches(provider, state, questions, signal, parseAnswers, options);
+    decideBatches(provider, state, questions, signal, parseAnswers, {
+      ...options,
+      onRequest: () => options.onRequest?.(++requests),
+    });
 };
 
 export const isConfident = (answer: Answer): answer is Choice =>

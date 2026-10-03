@@ -93,7 +93,7 @@ it.each(["openrouter", "typesafe", "custom"] as const)(
         () => {},
       );
     const single = await plan(budget);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(3);
     fetch.mockClear();
     budget = 64000;
     expect(await plan(budget)).toEqual(single);
@@ -483,7 +483,7 @@ it.each(["budget", "tokenLimit"])(
   },
 );
 
-it("does not return or name a large-window plan when ranking context cannot fit", async () => {
+it("returns a large-window plan when full ranking context cannot fit", async () => {
   const source: Snapshot = {
     windowId: 1,
     groups: [],
@@ -497,18 +497,33 @@ it("does not return or name a large-window plan when ranking context cannot fit"
     })),
   };
   const settings = { ...DEFAULT_SETTINGS, apiKey: "test", allowNewGroups: true };
-  const fetch = vi.fn();
+  const fetch = vi.fn(async (_url, init: RequestInit) =>
+    respond(JSON.parse(String(init.body)).questions),
+  );
   const naming = vi.fn(async () => "Related");
   vi.stubGlobal("fetch", fetch);
-  await expect(
-    buildPlan(
-      source,
-      settings,
-      createJudge(settings, new AbortController().signal, { maxRequestBytes: 16000 }),
-      naming,
-      () => {},
-    ),
-  ).rejects.toThrow("tokenLimit");
-  expect(fetch).not.toHaveBeenCalled();
-  expect(naming).not.toHaveBeenCalled();
+  const plan = await buildPlan(
+    source,
+    settings,
+    createJudge(settings, new AbortController().signal, { maxRequestBytes: 16000 }),
+    naming,
+    () => {},
+  );
+  expect(plan.blocks.flatMap((block) => block.tabIds)).toHaveLength(240);
+  expect(fetch.mock.calls.length).toBeGreaterThan(1);
+  expect(naming).toHaveBeenCalledTimes(1);
+});
+
+it("reports cumulative requests across staged judge calls", async () => {
+  const progress = vi.fn();
+  const fetch = vi.fn(async (_url, init: RequestInit) =>
+    respond(JSON.parse(String(init.body)).questions),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const judge = createJudge({ apiKey: "test" }, new AbortController().signal, {
+    onRequest: progress,
+  });
+  await judge({ rules: "First stage" }, { rank_tab_1: scores.rank_tab_0 });
+  await judge({ rules: "Second stage" }, { rank_tab_2: scores.rank_tab_0 });
+  expect(progress.mock.calls).toEqual([[1], [2]]);
 });
