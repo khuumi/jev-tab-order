@@ -62,12 +62,6 @@ export const buildPlan = async (
     "Latest priority under the rules",
   ];
   if (candidates.length) {
-    if (settings.allowNewGroups)
-      questions.create = {
-        type: "choice",
-        instructions: "According to state.rules, should new groups be created for ungrouped tabs?",
-        criteria: { yes: "Rules permit new groups", no: "Do not create groups" },
-      };
     for (const [index, tab] of candidates.entries()) {
       if (tab.groupId === -1 && groups.length)
         questions[`membership_${tab.id}`] = {
@@ -154,11 +148,7 @@ export const buildPlan = async (
   groups.forEach((group, index) => {
     group.tabIds = clusters[index].flatMap((cluster) => cluster.map((tab) => tab.id));
   });
-  const allowCreate =
-    settings.allowNewGroups &&
-    answers.create &&
-    isConfident(answers.create) &&
-    answers.create.choice === "yes";
+  const allowCreate = settings.allowNewGroups;
   const ungrouped: Block[] = [];
   for (const cluster of clusters[groups.length]) {
     const tabIds = cluster.map((tab) => tab.id);
