@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "Triez les onglets par sens avec une seule requête API Jev par exécution. Conservez les groupes et annulez les changements.",
+  "extensionDescription": "Triez les onglets par sens avec Jev. Conservez les groupes et annulez les changements.",
   "organize": "Organiser cette fenêtre",
   "undo": "Annuler la dernière organisation",
   "settings": "Paramètres",
@@ -55,7 +55,6 @@
   "rateLimited": "La limite de requêtes de Jev a été atteinte. Réessayez plus tard.",
   "invalidResponse": "Jev a renvoyé une réponse invalide. Aucune disposition n’a été appliquée.",
   "settingsTooLong": "Limitez les règles à 2 000 caractères et la clé API à 1 000 caractères.",
-  "tooManyTabs": "Organisez au maximum 200 onglets non épinglés par fenêtre. Divisez cette fenêtre avant de réessayer.",
   "invalidPlan": "La disposition proposée enfreignait une contrainte sur les onglets. Elle n’a pas été appliquée.",
   "windowChanged": "Des onglets ou groupes ont changé pendant la planification. Relancez l’organisation à partir de la disposition actuelle.",
   "settingsChanged": "Les paramètres ont changé pendant la planification. Relancez l’organisation ou l’aperçu.",

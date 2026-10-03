@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "Tabs nach Bedeutung ordnen: eine Jev-API-Anfrage pro Durchlauf. Bestehende Gruppen erhalten und Änderungen rückgängig machen.",
+  "extensionDescription": "Tabs nach Bedeutung mit Jev ordnen. Bestehende Gruppen erhalten und Änderungen rückgängig machen.",
   "organize": "Dieses Fenster ordnen",
   "undo": "Letzte Anordnung rückgängig machen",
   "settings": "Einstellungen",
@@ -55,7 +55,6 @@
   "rateLimited": "Das Anfragelimit von Jev wurde erreicht. Versuchen Sie es später erneut.",
   "invalidResponse": "Jev hat eine ungültige Antwort zurückgegeben. Es wurde keine Anordnung angewendet.",
   "settingsTooLong": "Regeln dürfen höchstens 2.000 Zeichen und der API-Schlüssel höchstens 1.000 Zeichen enthalten.",
-  "tooManyTabs": "Ordnen Sie höchstens 200 nicht angeheftete Tabs pro Fenster. Teilen Sie dieses Fenster vor einem erneuten Versuch auf.",
   "invalidPlan": "Die vorgeschlagene Anordnung verletzte eine Tab-Bedingung. Sie wurde nicht angewendet.",
   "windowChanged": "Tabs oder Gruppen wurden während der Planung geändert. Ordnen Sie erneut, um die aktuelle Anordnung zu verwenden.",
   "settingsChanged": "Die Einstellungen wurden während der Planung geändert. Starten Sie die Organisation oder Vorschau erneut.",

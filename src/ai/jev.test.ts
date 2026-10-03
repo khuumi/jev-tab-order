@@ -191,12 +191,12 @@ describe.each([
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("sends the full state and all questions in one request", async () => {
-    const state = { text: "あ".repeat(30000) };
+  it("sends a comfortably fitting state and all questions in one request", async () => {
+    const state = { text: "あ".repeat(30) };
     const many = Object.fromEntries(
       Array.from({ length: 50 }, (_, i) => [
         `q${i}`,
-        { ...questions.q, instructions: "あ".repeat(3000) },
+        { ...questions.q, instructions: "あ".repeat(3) },
       ]),
     );
     const answers = Object.fromEntries(Object.keys(many).map((id) => [id, valid.answers.q]));

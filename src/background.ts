@@ -87,13 +87,13 @@ const run = async (windowId: number, mode: "run" | "undo") => {
   let status: TextKey = mode === "undo" ? "restoring" : "loading";
   let errorMessage: string | undefined;
   let progressWrites = Promise.resolve();
-  const report = (key: TextKey) => {
+  const report = (key: TextKey, batch?: number) => {
     status = key;
     progressWrites = progressWrites.then(async () => {
       await chrome.storage.session.set({
-        [`operation_${windowId}`]: { mode, startedAt, status: key },
+        [`operation_${windowId}`]: { mode, startedAt, status: key, batch },
       });
-      await chrome.action.setTitle({ title: i18n.t(key) });
+      await chrome.action.setTitle({ title: i18n.t(key) + (batch ? ` (${batch})` : "") });
     });
     return progressWrites;
   };
@@ -108,7 +108,11 @@ const run = async (windowId: number, mode: "run" | "undo") => {
     }
     const settings = await getSettings();
     const signal = AbortSignal.timeout(240000);
-    const judge = createJudge(settings, signal);
+    const judge = createJudge(settings, signal, {
+      onRequest: (batch) => {
+        void report("classifying", batch).catch(() => {});
+      },
+    });
     const before = await capture(windowId);
     if ((await readUndo(windowId))?.pending) throw new Error("pendingRecovery");
     if (!before.tabs.some(isEligible)) {

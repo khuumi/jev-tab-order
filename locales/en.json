@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "Organize tabs by meaning with a single Jev API request per run. Keep existing groups and undo changes.",
+  "extensionDescription": "Organize tabs by meaning with Jev. Keep existing groups and undo changes.",
   "organize": "Organize this window",
   "undo": "Undo last organization",
   "settings": "Settings",
@@ -55,7 +55,6 @@
   "rateLimited": "Jev's rate limit was reached. Please try again later.",
   "invalidResponse": "Jev returned an invalid answer. No layout was applied.",
   "settingsTooLong": "Keep rules within 2,000 characters and the API key within 1,000 characters.",
-  "tooManyTabs": "Organize at most 200 unpinned tabs per window. Split this window before trying again.",
   "invalidPlan": "The proposed layout violated a tab constraint. It was not applied.",
   "windowChanged": "Tabs or groups changed during planning. Organize again to use the current layout.",
   "settingsChanged": "Settings changed during planning. Run organization or preview again.",

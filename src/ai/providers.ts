@@ -9,7 +9,11 @@ export const PROVIDERS = {
   custom: { endpoint: "", model: "" },
 };
 type JevRequest = { state: Parameters<Judge>[0]; questions: Parameters<Judge>[1] };
-export type DecisionProvider = { decide: (request: JevRequest) => Promise<unknown> };
+export type DecisionProvider = {
+  maxRequestBytes: number;
+  requestBytes: (request: JevRequest) => number;
+  decide: (request: JevRequest) => Promise<unknown>;
+};
 
 export const resolveProvider = (settings: DecisionSettings) => {
   const provider = settings.provider ?? "openrouter";
@@ -48,7 +52,13 @@ export const createDecisionProvider = (
   const { endpoint, model } = resolveProvider(settings);
   const apiKey = settings.apiKey.trim();
   if (!apiKey && (settings.provider ?? "openrouter") !== "custom") throw new Error("missingKey");
+  const payload = ({ state, questions }: JevRequest) =>
+    JSON.stringify({ ...(model ? { model } : {}), state, questions });
   return {
+    // Conservative serialized UTF-8 input budget, including model and state.
+    // Smaller context windows are handled by token-limit splitting below.
+    maxRequestBytes: 64000,
+    requestBytes: (request) => new TextEncoder().encode(payload(request)).length,
     decide: async ({ state, questions }) => {
       if (!Object.keys(questions).length) return { answers: {} };
       if (signal.aborted) throw new Error("cancelled");
@@ -67,7 +77,7 @@ export const createDecisionProvider = (
             },
             signal: controller.signal,
             redirect: "error",
-            body: JSON.stringify({ ...(model ? { model } : {}), state, questions }),
+            body: payload({ state, questions }),
           });
         } catch {
           throw new Error(signal.aborted ? "cancelled" : "networkError");
@@ -78,7 +88,11 @@ export const createDecisionProvider = (
           if (response.status === 400) {
             try {
               const body = await response.json();
-              tokenLimit = body?.detail?.error_type === "max_tokens_exceeded";
+              tokenLimit =
+                body?.detail?.error_type === "max_tokens_exceeded" ||
+                /context[_ ](?:length|window)|max(?:imum)?[_ ](?:context|tokens)|too many tokens|token limit|input.*(?:too long|exceed)/i.test(
+                  String(body?.error?.code ?? "") + " " + String(body?.error?.message ?? ""),
+                );
             } catch {
               if (signal.aborted) throw new Error("cancelled");
             }

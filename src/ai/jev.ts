@@ -1,3 +1,4 @@
+import { decideBatches } from "@/src/ai/batches";
 import { createDecisionProvider } from "@/src/ai/providers";
 import type { DecisionSettings, Answer, Choice, Judge, Question } from "@/src/types";
 
@@ -71,10 +72,14 @@ export const parseAnswers = (value: unknown, questions: Record<string, Question>
   }
   return answers;
 };
-export const createJudge = (settings: DecisionSettings, signal: AbortSignal): Judge => {
+export const createJudge = (
+  settings: DecisionSettings,
+  signal: AbortSignal,
+  options: { maxRequestBytes?: number; onRequest?: (count: number) => void } = {},
+): Judge => {
   const provider = createDecisionProvider(settings, signal);
-  return async (state, questions) =>
-    parseAnswers(await provider.decide({ state, questions }), questions);
+  return (state, questions) =>
+    decideBatches(provider, state, questions, signal, parseAnswers, options);
 };
 
 export const isConfident = (answer: Answer): answer is Choice =>
