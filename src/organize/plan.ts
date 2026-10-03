@@ -165,11 +165,14 @@ export const buildPlan = async (
   });
   const tabRanks = new Map<string, number | undefined>();
   for (const container of rankingContainers) {
-    const peers = container.tabs.filter(isEligible).map((tab) => ({
-      key: String(tab.id),
-      ...describe(tab),
-      groupId: container.groupId,
-    }));
+    const peers = [...container.tabs]
+      .sort((a, b) => a.index - b.index)
+      .filter(isEligible)
+      .map((tab) => ({
+        key: String(tab.id),
+        ...describe(tab),
+        groupId: container.groupId,
+      }));
     for (const [key, rank] of await rankPeers(peers, "tab", rules, judge, {
       key: container.key,
       title: container.title,

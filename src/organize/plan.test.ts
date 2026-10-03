@@ -861,3 +861,32 @@ it("ranks prospective new groups against their own clustering peers", async () =
   expect(contexts[0]).toMatchObject({ tabs: [{ id: "4" }, { id: "5" }] });
   expect(contexts[1]).toMatchObject({ tabs: [{ id: "6" }, { id: "7" }] });
 });
+
+it("keeps original peer order when an earlier tab joins a later existing group", async () => {
+  const source = {
+    ...before,
+    tabs: before.tabs
+      .map((tab) => ({ ...tab, index: tab.id === 3 ? 1 : tab.id === 2 ? 2 : tab.index }))
+      .sort((a, b) => a.index - b.index),
+  };
+  let inspected = false;
+  await buildPlan(
+    source,
+    DEFAULT_SETTINGS,
+    async (state, questions) => {
+      if (questions.rank_tab_2) {
+        expect(state).toMatchObject({
+          tabs: [
+            { id: "3", groupId: 7 },
+            { id: "2", groupId: 7 },
+          ],
+        });
+        inspected = true;
+      }
+      return judge(state, questions);
+    },
+    async () => "Unused",
+    () => {},
+  );
+  expect(inspected).toBe(true);
+});
