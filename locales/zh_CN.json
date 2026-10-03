@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "每次整理只需一次 Jev API 请求，即可按语义整理整个窗口的标签页。保留现有分组并支持撤销更改。",
+  "extensionDescription": "通过 Jev 按语义整理整个窗口的标签页。保留现有分组并支持撤销更改。",
   "organize": "整理此窗口",
   "undo": "撤销上次整理",
   "settings": "设置",
@@ -24,7 +24,7 @@
   "previewHint": "使用已保存的设置和 Jev API。应用之前不会更改任何标签页。",
   "shortcuts": "设置快捷键",
   "loading": "正在加载…",
-  "classifying": "Jev 正在一次性判断分组和顺序…",
+  "classifying": "Jev 正在判断分组和顺序…",
   "sorting": "正在排列相关标签页…",
   "sortingGroups": "正在排列分组…",
   "naming": "正在此设备上为新分组命名…",
@@ -55,7 +55,6 @@
   "rateLimited": "已达到 Jev 请求频率上限。请稍后重试。",
   "invalidResponse": "Jev 返回了无效答案。未应用任何布局。",
   "settingsTooLong": "规则请限制在 2,000 个字符以内，API 密钥请限制在 1,000 个字符以内。",
-  "tooManyTabs": "每个窗口最多整理 200 个未固定的标签页。请拆分此窗口后重试。",
   "invalidPlan": "建议的布局违反了标签页约束，未予应用。",
   "windowChanged": "规划期间标签页或分组发生了变化。请重新整理以使用当前布局。",
   "settingsChanged": "规划期间设置发生了变化。请重新整理或生成预览。",

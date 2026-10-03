@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "每次整理只需一次 Jev API 請求，即可依語意整理整個視窗的分頁。保留現有群組並支援復原變更。",
+  "extensionDescription": "透過 Jev 依語意整理整個視窗的分頁。保留現有群組並支援復原變更。",
   "organize": "整理此視窗",
   "undo": "復原上次整理",
   "settings": "設定",
@@ -24,7 +24,7 @@
   "previewHint": "使用已儲存的設定和 Jev API。套用之前不會變更任何分頁。",
   "shortcuts": "設定快捷鍵",
   "loading": "正在載入…",
-  "classifying": "Jev 正在一次判斷分組與順序…",
+  "classifying": "Jev 正在判斷分組與順序…",
   "sorting": "正在排列相關分頁…",
   "sortingGroups": "正在排列群組…",
   "naming": "正在此裝置上為新群組命名…",
@@ -55,7 +55,6 @@
   "rateLimited": "已達 Jev 要求頻率上限。請稍後重試。",
   "invalidResponse": "Jev 傳回了無效答案。未套用任何配置。",
   "settingsTooLong": "規則請限制在 2,000 個字元以內，API 金鑰請限制在 1,000 個字元以內。",
-  "tooManyTabs": "每個視窗最多整理 200 個未固定的分頁。請拆分此視窗後重試。",
   "invalidPlan": "建議的配置違反了分頁限制，因此未套用。",
   "windowChanged": "規劃期間分頁或群組發生變更。請重新整理以使用目前配置。",
   "settingsChanged": "規劃期間設定發生了變更。請重新整理或產生預覽。",

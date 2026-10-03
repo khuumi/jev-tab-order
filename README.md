@@ -20,7 +20,7 @@
 
 A Chrome extension that uses [Jev](https://typesafe.ai/) to organize tabs and groups in the current window by meaning and your sorting rules. Pinned tabs and existing group memberships stay intact.
 
-**Organize the entire window with a single Jev API request.** Grouping and ordering decisions are evaluated together, regardless of the number of tabs.
+**Organize the entire window with bounded Jev requests.** Small windows use one request; larger workloads are split automatically.
 
 ## Getting Started
 
@@ -45,7 +45,7 @@ Select where to run Jev. Existing settings continue to use OpenRouter with the s
 - **Model**: Override the provider default with a compatible Jev model identifier. Leave blank to use the default; Custom / Local sends no model when blank.
 - **Decision endpoint URL**: Custom / Local uses this exact HTTP or HTTPS URL. Include the API path; no path is appended. The endpoint must accept `{ state, questions, model? }` and return `{ answers }` with Jev choice/score semantics. A generic chat-completions endpoint is not compatible. URL credentials, query parameters, and fragments are rejected. Requests do not follow redirects.
 - **API key**: Stored on this device only. The key is cleared when switching providers or changing the custom endpoint origin (same-origin path changes keep it) to avoid sending a key to another service. Custom / Local omits the Authorization header when blank. Save and Test connection request access to the TypeSafe or custom origin; denying access prevents saving or testing. Chrome grants host access, not access limited to the API path. HTTP is allowed only without an API key, including for localhost. Any endpoint using a key must use HTTPS.
-- **Test connection**: Uses the currently entered provider, endpoint, model, and key without requiring a save. Organization and previews use saved settings. Each operation sends at most one decision request; undo sends none.
+- **Test connection**: Uses the currently entered provider, endpoint, model, and key without requiring a save. Organization and previews use saved settings. Organization and preview split large workloads into bounded requests; undo sends none.
 
 - **Sorting rules**: Leave blank to use the defaults. Custom text replaces the entire default rule. Example: “Put official documentation before tutorials. Order groups as Development, Research, Personal. Do not create new groups.”
 - **Allow new groups**: New groups require permission from both this setting and the rules, multiple related ungrouped tabs, and available Chrome built-in AI for naming. Use the preparation button in settings if the model needs an initial download.
@@ -57,7 +57,7 @@ Select where to run Jev. Existing settings continue to use OpenRouter with the s
 The extension collects the window's tab information, asks Jev for judgments, then turns those answers into a layout and applies it through Chrome.
 
 1. **Collect information — extension:** Read tab titles, URLs, current positions, and group memberships. Prepare the rules and group names alongside them. Pinned tabs are excluded from Jev's input; page bodies are not read. URL credentials, query strings, and fragments are removed before sending.
-2. **Judge meaning — Jev:** Evaluate all questions together in **one API request**: which existing group an ungrouped tab fits, which tabs or groups belong next to each other, how early or late each should appear under the rules, and whether the rules permit new groups. Candidates include domains or group names to make the choices clear. Jev returns choices and numeric priority scores, with probabilities and confidence.
+2. **Judge meaning — Jev:** Evaluate questions in **requests bounded by serialized size**: which existing group an ungrouped tab fits, which tabs or groups belong next to each other, how early or late each should appear under the rules, and whether the rules permit new groups. Candidates include domains or group names to make the choices clear. Jev returns choices and numeric priority scores, with probabilities and confidence.
 3. **Build the layout — extension:** Use accepted choices to assign ungrouped tabs and gather related items into adjacent sets. Sort within and between those sets using Jev's scores, with lower scores placed earlier. Answers below the acceptance thresholds are ignored; ties preserve their previous order, and items without an accepted score keep their slot in that sorting step. These calculations run locally, without further Jev calls.
 4. **Name new groups — Chrome's local AI, when enabled:** If both the settings and Jev's judgment allow new groups, related ungrouped tabs can form a group. Chrome's built-in AI generates its name from tab titles. If naming is unavailable, those tabs remain adjacent without a new group.
 5. **Validate and apply — extension:** Check that the plan preserves every tab, pinned tabs, and existing group memberships, then move tabs and groups through Chrome APIs. Preview stops before applying; undo restores the saved layout without calling Jev.
@@ -66,7 +66,7 @@ For example, if Jev selects “GitHub” as an ungrouped tab's destination and t
 
 ### What the Jev Request Contains
 
-With OpenRouter selected, the extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **One API call contains many questions**, prepared together before sending.
+With OpenRouter selected, the extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **Each API call contains a bounded batch of questions**, prepared before their answers are used.
 
 - **`state` — information to judge:** The active rules, web tab IDs, titles, sanitized URLs, and group memberships; existing group names and member IDs; and the current sequence of groups and ungrouped tabs. Detailed tab information is shared across questions.
 - **`questions` — what to decide:** Each question contains `type` (Choice or Score), `instructions` (the judgment to make under the rules), and `criteria` (available choices or ordered scoring levels).
@@ -362,3 +362,9 @@ npm run test:e2e
 ## Releases
 
 See the [release guide](.agents/skills/jev-tab-order-release/SKILL.md) for preparation and publishing procedures, and [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+### Request budgets
+
+The provider abstraction measures the UTF-8 JSON body, including model, rules, context, and questions, against a conservative 64,000-byte budget. `createJudge` accepts `maxRequestBytes` for integrations with smaller custom/local context windows. This is an input-size estimate, not a model tokenizer guarantee. Token-limit responses (HTTP 413 or recognized HTTP 400 errors) trigger further splitting; unrelated failures are not retried. A minimum useful request that still cannot fit returns the input-limit error.
+
+Questions are independent of earlier answers. Small requests retain the full original state. Batches include rules, target tabs/blocks, offered candidates, and referenced group/block members. Oversized adjacency choices search ordered candidate partitions for the earliest confident match; oversized membership choices compare confident partition winners. Ranking remains the existing five-level rules-based priority, and final membership, clustering, naming, and ordering are reconciled only after all answers resolve. The request counter shows progress. A cancelled run never applies a partial plan. Total comparison work may still be quadratic, but no individual request grows without a bound. Model judgments may vary with context and candidate partitions; deterministic fixtures verify the assembly contract rather than guaranteeing identical live-model answers.

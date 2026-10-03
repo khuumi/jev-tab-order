@@ -12,7 +12,6 @@ export const buildPlan = async (
   report: (key: string) => void,
 ): Promise<Plan> => {
   const tabs = before.tabs.filter((tab) => !tab.pinned);
-  if (tabs.length > 200) throw new Error("tooManyTabs");
   const rules = effectiveRules(settings);
   const warnings: string[] = [];
   const byId = new Map(tabs.map((tab) => [tab.id, tab]));
@@ -120,7 +119,7 @@ export const buildPlan = async (
     }
   }
   report("classifying");
-  // All semantic questions are prepared before the only Jev call.
+  // Questions are independent; the judge partitions them under its request budget.
   const answers = Object.keys(questions).length ? await judge(state, questions) : {};
   const remaining: Tab[] = [];
   for (const tab of available) {

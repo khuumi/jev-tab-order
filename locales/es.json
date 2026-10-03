@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "Organiza pestañas por significado con una sola solicitud a la API de Jev por ejecución. Conserva grupos y deshaz cambios.",
+  "extensionDescription": "Organiza pestañas por significado con Jev. Conserva grupos y deshaz cambios.",
   "organize": "Organizar esta ventana",
   "undo": "Deshacer la última organización",
   "settings": "Configuración",
@@ -55,7 +55,6 @@
   "rateLimited": "Se alcanzó el límite de solicitudes de Jev. Inténtalo más tarde.",
   "invalidResponse": "Jev devolvió una respuesta no válida. No se aplicó ninguna disposición.",
   "settingsTooLong": "Limita las reglas a 2000 caracteres y la clave API a 1000 caracteres.",
-  "tooManyTabs": "Organiza como máximo 200 pestañas sin fijar por ventana. Divide esta ventana antes de intentarlo de nuevo.",
   "invalidPlan": "La disposición propuesta incumplía una restricción de pestañas. No se aplicó.",
   "windowChanged": "Las pestañas o los grupos cambiaron durante la planificación. Organiza de nuevo para usar la disposición actual.",
   "settingsChanged": "La configuración cambió durante la planificación. Vuelve a organizar o generar la vista previa.",

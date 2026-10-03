@@ -56,7 +56,7 @@ Each description includes the full version history from [CHANGELOG.md](CHANGELOG
 ```text
 Jev Tab Order uses Jev to organize tabs in the current Chrome window by topic and your sorting rules.
 
-A single Jev API request handles the grouping and ordering decisions for the entire window. Each organization or preview uses at most one request, regardless of the number of tabs; undo uses none.
+Jev evaluates grouping and ordering in size-bounded requests. Small workloads use one request; larger workloads are split automatically. Undo sends none.
 
 FEATURES
 ・Organize the entire window from the toolbar icon, page context menu, or a configured shortcut
@@ -77,7 +77,7 @@ HOW TO USE
 
 CHANGELOG
 0.1.0
-- Organize tabs and groups with at most one Jev API request per operation.
+- Organize tabs and groups with size-bounded Jev API requests.
 - Custom sorting rules and optional new groups.
 - Layout previews and undo.
 - Multilingual support.
@@ -88,7 +88,7 @@ CHANGELOG
 ```text
 Jev Tab OrderはJevを利用し、現在のChromeウィンドウのタブを話題や指定したルールに沿って整理します。
 
-ウィンドウ全体のグループ分けと並び順を、Jev APIへの1回のリクエストでまとめて判断します。タブ数にかかわらず、整理・プレビュー1回につきAPI呼び出しは最大1回。元に戻す操作では呼び出しません。
+Jevはサイズを制限したリクエストでグループ分けと並び順を判断します。小さな処理は1回、大きな処理は自動的に分割します。元に戻す操作では呼び出しません。
 
 機能
 ・ツールバーアイコン、ページの右クリックメニュー、設定済みショートカットからウィンドウ全体を整理
@@ -109,7 +109,7 @@ Jev Tab OrderはJevを利用し、現在のChromeウィンドウのタブを話�
 
 変更履歴
 0.1.0
-- Jev APIへの最大1回のリクエストでタブとグループを整理。
+- サイズを制限したJev APIリクエストでタブとグループを整理。
 - カスタムルールと任意の新規グループ作成。
 - 配置のプレビューと元に戻す機能。
 - 多言語対応。
@@ -120,7 +120,7 @@ Jev Tab OrderはJevを利用し、現在のChromeウィンドウのタブを話�
 ```text
 Jev Tab Order verwendet Jev, um Tabs im aktuellen Chrome-Fenster nach Themen und Ihren Sortierregeln zu ordnen.
 
-Eine einzige Jev-API-Anfrage bündelt die Entscheidungen zur Gruppierung und Reihenfolge für das gesamte Fenster. Jede Anordnung oder Vorschau benötigt unabhängig von der Tabanzahl höchstens eine Anfrage; Rückgängigmachen benötigt keine.
+Jev bewertet Gruppierung und Reihenfolge in größenbegrenzten Anfragen. Kleine Aufgaben verwenden eine Anfrage; größere werden automatisch aufgeteilt. Rückgängigmachen sendet keine.
 
 FUNKTIONEN
 ・Das gesamte Fenster über das Symbol in der Symbolleiste, das Seiten-Kontextmenü oder ein eingerichtetes Tastenkürzel ordnen
@@ -141,7 +141,7 @@ VERWENDUNG
 
 ÄNDERUNGSVERLAUF
 0.1.0
-- Tabs und Gruppen mit höchstens einer Jev-API-Anfrage pro Vorgang ordnen.
+- Tabs und Gruppen mit größenbegrenzten Jev-API-Anfragen ordnen.
 - Eigene Sortierregeln und optionale neue Gruppen.
 - Vorschau und Rückgängigmachen.
 - Mehrsprachige Unterstützung.
@@ -152,7 +152,7 @@ VERWENDUNG
 ```text
 Jev Tab Order utiliza Jev para organizar las pestañas de la ventana actual de Chrome por tema y según tus reglas de ordenación.
 
-Una sola solicitud a la API de Jev reúne las decisiones de agrupación y orden de toda la ventana. Cada organización o vista previa usa como máximo una solicitud, sin importar el número de pestañas; deshacer no usa ninguna.
+Jev evalúa la agrupación y el orden en solicitudes de tamaño limitado. Las tareas pequeñas usan una solicitud; las grandes se dividen automáticamente. Deshacer no envía ninguna.
 
 FUNCIONES
 ・Organizar toda la ventana desde el icono de la barra de herramientas, el menú contextual de la página o un atajo configurado
@@ -173,7 +173,7 @@ CÓMO USAR
 
 HISTORIAL DE CAMBIOS
 0.1.0
-- Organización de pestañas y grupos con un máximo de una solicitud a la API de Jev por operación.
+- Organización de pestañas y grupos con solicitudes de tamaño limitado a la API de Jev.
 - Reglas de ordenación personalizadas y creación opcional de grupos.
 - Vista previa de la disposición y opción de deshacer.
 - Compatibilidad con varios idiomas.
@@ -184,7 +184,7 @@ HISTORIAL DE CAMBIOS
 ```text
 Jev Tab Order utilise Jev pour organiser les onglets de la fenêtre Chrome actuelle par sujet et selon vos règles de tri.
 
-Une seule requête à l’API Jev regroupe les décisions de regroupement et de tri pour toute la fenêtre. Chaque organisation ou aperçu utilise au maximum une requête, quel que soit le nombre d’onglets ; l’annulation n’en utilise aucune.
+Jev évalue le regroupement et le tri dans des requêtes de taille limitée. Les petites tâches utilisent une requête ; les grandes sont divisées automatiquement. L’annulation n’en envoie aucune.
 
 FONCTIONNALITÉS
 ・Organiser toute la fenêtre depuis l’icône de la barre d’outils, le menu contextuel de la page ou un raccourci configuré
@@ -205,7 +205,7 @@ UTILISATION
 
 HISTORIQUE DES MODIFICATIONS
 0.1.0
-- Organisation des onglets et groupes avec au maximum une requête à l’API Jev par opération.
+- Organisation des onglets et groupes avec des requêtes de taille limitée à l’API Jev.
 - Règles de tri personnalisées et création facultative de groupes.
 - Aperçu des dispositions et annulation.
 - Prise en charge multilingue.
@@ -216,7 +216,7 @@ HISTORIQUE DES MODIFICATIONS
 ```text
 Jev Tab Order는 Jev를 사용하여 현재 Chrome 창의 탭을 주제와 지정한 정렬 규칙에 따라 정리합니다.
 
-Jev API 요청 한 번으로 창 전체의 그룹 배정과 정렬을 함께 판단합니다. 탭 수에 관계없이 정리 또는 미리보기 한 번당 API 요청은 최대 한 번이며, 실행 취소는 요청하지 않습니다.
+Jev는 크기가 제한된 요청으로 그룹 배정과 정렬을 판단합니다. 작은 작업은 한 번 요청하고 큰 작업은 자동으로 나눕니다. 실행 취소는 요청하지 않습니다.
 
 기능
 ・툴바 아이콘, 페이지 우클릭 메뉴 또는 설정한 단축키로 창 전체 정리
@@ -237,7 +237,7 @@ Jev API 요청 한 번으로 창 전체의 그룹 배정과 정렬을 함께 판
 
 변경 내역
 0.1.0
-- 작업당 최대 한 번의 Jev API 요청으로 탭과 그룹 정리.
+- 크기가 제한된 Jev API 요청으로 탭과 그룹 정리.
 - 사용자 지정 정렬 규칙과 선택적 새 그룹 생성.
 - 배치 미리보기와 실행 취소.
 - 다국어 지원.
@@ -248,7 +248,7 @@ Jev API 요청 한 번으로 창 전체의 그룹 배정과 정렬을 함께 판
 ```text
 O Jev Tab Order usa o Jev para organizar as abas da janela atual do Chrome por assunto e conforme suas regras de ordenação.
 
-Uma única solicitação à API do Jev reúne as decisões de agrupamento e ordenação de toda a janela. Cada organização ou visualização usa no máximo uma solicitação, independentemente do número de abas; desfazer não usa nenhuma.
+O Jev avalia agrupamento e ordenação em solicitações com tamanho limitado. Tarefas pequenas usam uma solicitação; as maiores são divididas automaticamente. Desfazer não envia nenhuma.
 
 RECURSOS
 ・Organizar toda a janela pelo ícone da barra de ferramentas, menu de contexto da página ou atalho configurado
@@ -269,7 +269,7 @@ COMO USAR
 
 HISTÓRICO DE ALTERAÇÕES
 0.1.0
-- Organização de abas e grupos com no máximo uma solicitação à API do Jev por operação.
+- Organização de abas e grupos com solicitações de tamanho limitado à API do Jev.
 - Regras de ordenação personalizadas e criação opcional de grupos.
 - Visualização da disposição e opção de desfazer.
 - Suporte a vários idiomas.
@@ -280,7 +280,7 @@ HISTÓRICO DE ALTERAÇÕES
 ```text
 Jev Tab Order использует Jev для упорядочивания вкладок текущего окна Chrome по темам и вашим правилам сортировки.
 
-Один запрос к API Jev объединяет решения о группировке и порядке вкладок всего окна. Каждое упорядочивание или предпросмотр использует не более одного запроса независимо от числа вкладок; отмена не требует запросов.
+Jev оценивает группировку и порядок в запросах ограниченного размера. Небольшие задачи используют один запрос; большие автоматически разделяются. Отмена не отправляет запросов.
 
 ВОЗМОЖНОСТИ
 ・Упорядочивание всего окна через значок на панели инструментов, контекстное меню страницы или настроенное сочетание клавиш
@@ -301,7 +301,7 @@ Jev Tab Order использует Jev для упорядочивания вк�
 
 ИСТОРИЯ ИЗМЕНЕНИЙ
 0.1.0
-- Упорядочивание вкладок и групп с помощью не более одного запроса к API Jev за операцию.
+- Упорядочивание вкладок и групп с помощью запросов ограниченного размера к API Jev.
 - Собственные правила сортировки и необязательное создание групп.
 - Предпросмотр расположения и отмена.
 - Поддержка нескольких языков.
@@ -312,7 +312,7 @@ Jev Tab Order использует Jev для упорядочивания вк�
 ```text
 Jev Tab Order 使用 Jev，按主题和你指定的排序规则整理当前 Chrome 窗口的标签页。
 
-只需一次 Jev API 请求，即可统一判断整个窗口的分组和排列顺序。无论标签页数量多少，每次整理或预览最多调用一次 API；撤销操作无需调用。
+Jev 通过大小受限的请求判断分组和顺序。小任务使用一次请求，大任务自动拆分。撤销无需请求。
 
 功能
 ・通过工具栏图标、页面右键菜单或已配置的快捷键整理整个窗口
@@ -333,7 +333,7 @@ Jev Tab Order 使用 Jev，按主题和你指定的排序规则整理当前 Chro
 
 更新日志
 0.1.0
-- 每次操作最多通过一次 Jev API 请求整理标签页和分组。
+- 通过大小受限的 Jev API 请求整理标签页和分组。
 - 自定义排序规则和可选的新建分组功能。
 - 布局预览和撤销。
 - 多语言支持。
@@ -344,7 +344,7 @@ Jev Tab Order 使用 Jev，按主题和你指定的排序规则整理当前 Chro
 ```text
 Jev Tab Order 使用 Jev，依主題和你指定的排序規則整理目前 Chrome 視窗的分頁。
 
-只需一次 Jev API 請求，即可統一判斷整個視窗的分組與排列順序。無論分頁數量多少，每次整理或預覽最多呼叫一次 API；復原操作無須呼叫。
+Jev 透過大小受限的請求判斷分組和順序。小任務使用一次請求，大任務自動拆分。復原無須請求。
 
 功能
 ・透過工具列圖示、網頁右鍵選單或已設定的快捷鍵整理整個視窗
@@ -365,7 +365,7 @@ Jev Tab Order 使用 Jev，依主題和你指定的排序規則整理目前 Chro
 
 更新紀錄
 0.1.0
-- 每次操作最多透過一次 Jev API 請求整理分頁和群組。
+- 透過大小受限的 Jev API 請求整理分頁和群組。
 - 自訂排序規則與選擇性建立群組功能。
 - 配置預覽與復原。
 - 多語言支援。

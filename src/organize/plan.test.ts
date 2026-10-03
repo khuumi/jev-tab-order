@@ -375,7 +375,7 @@ it("passes only custom rules through every planning stage", async () => {
   expect(result.settings.rules).toBe(rules);
 });
 
-it("handles an empty window and rejects more than 200 movable tabs", async () => {
+it("handles an empty window and more than 200 movable tabs", async () => {
   const empty = { windowId: 1, tabs: [], groups: [] };
   expect(
     await buildPlan(
@@ -387,15 +387,14 @@ it("handles an empty window and rejects more than 200 movable tabs", async () =>
     ),
   ).toEqual({ before: empty, settings: DEFAULT_SETTINGS, blocks: [], warnings: [] });
   const tabs = Array.from({ length: 201 }, (_, i) => ({ ...before.tabs[2], id: i, index: i }));
-  await expect(
-    buildPlan(
-      { ...empty, tabs },
-      DEFAULT_SETTINGS,
-      judge,
-      async () => "Unused",
-      () => {},
-    ),
-  ).rejects.toThrow("tooManyTabs");
+  const large = await buildPlan(
+    { ...empty, tabs },
+    DEFAULT_SETTINGS,
+    judge,
+    async () => "Unused",
+    () => {},
+  );
+  expect(large.blocks.flatMap((block) => block.tabIds)).toHaveLength(201);
 });
 
 it.each([
@@ -504,8 +503,8 @@ it.each(["chain", "self", "uncertain"])(
   },
 );
 
-it.each([50, 100, 200])(
-  "plans %s tabs with one HTTP request including memberships and grouping",
+it.each([4, 50, 100, 201])(
+  "plans %s tabs within bounded HTTP requests including memberships and grouping",
   async (count) => {
     const { createJudge } = await import("@/src/ai/jev");
     const source: Snapshot = {
@@ -573,11 +572,15 @@ it.each([50, 100, 200])(
         async () => "Group",
         () => {},
       );
-      expect(fetch).toHaveBeenCalledTimes(1);
+      if (count === 4) expect(fetch).toHaveBeenCalledTimes(1);
+      if (count > 4) expect(fetch.mock.calls.length).toBeGreaterThan(1);
+      for (const call of fetch.mock.calls)
+        expect(new TextEncoder().encode(String(call[1].body)).length).toBeLessThanOrEqual(64000);
       expect(result.blocks.flatMap((block) => block.tabIds)).toEqual(
         source.tabs.map((tab) => tab.id),
       );
       expect(result.blocks[0].groupId).toBe(7);
+      if (count > 4) return;
       const payload = JSON.parse(String(fetch.mock.calls[0][1].body));
       expect(payload.state.tabs).toHaveLength(count);
       expect(payload.state.groups[0].tabIds).toEqual(["10", "11"]);

@@ -13,6 +13,7 @@ const target = params.has("windowId") ? Number(params.get("windowId")) : NaN;
 const initialMode = params.get("mode") ?? "preview";
 export default () => {
   const [status, setStatus] = useState<TextKey>("loading");
+  const [batch, setBatch] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [mutating, setMutating] = useState(false);
@@ -62,7 +63,13 @@ export default () => {
     controller.current = new AbortController();
     const signal = controller.current.signal;
     const settings = await getSettings();
-    const judge = createJudge(settings, signal);
+    setBatch(0);
+    const judge = createJudge(settings, signal, {
+      onRequest: (count) => {
+        setStatus("classifying");
+        setBatch(count);
+      },
+    });
     const before = await capture(target);
     if ((await readUndo(target))?.pending) throw new Error("pendingRecovery");
     if (!before.tabs.some(isEligible)) {
@@ -119,7 +126,10 @@ export default () => {
       <section className="card space-y-3" aria-live="polite">
         <div className="flex items-center gap-3">
           {busy && <span className="pulse rounded-full bg-emerald-700 w-2.5 h-2.5" />}
-          <h2>{i18n.t(status)}</h2>
+          <h2>
+            {i18n.t(status)}
+            {status === "classifying" && batch > 0 ? ` (${batch})` : ""}
+          </h2>
         </div>
         <p className="text-xs muted">
           {i18n.t("targetWindow")} {Number.isInteger(target) ? target : "—"}

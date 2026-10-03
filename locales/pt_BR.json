@@ -1,5 +1,5 @@
 {
-  "extensionDescription": "Organize abas por significado com uma única solicitação à API do Jev por execução. Preserve grupos e desfaça alterações.",
+  "extensionDescription": "Organize abas por significado com Jev. Preserve grupos e desfaça alterações.",
   "organize": "Organizar esta janela",
   "undo": "Desfazer a última organização",
   "settings": "Configurações",
@@ -55,7 +55,6 @@
   "rateLimited": "O limite de solicitações do Jev foi atingido. Tente novamente mais tarde.",
   "invalidResponse": "O Jev retornou uma resposta inválida. Nenhuma disposição foi aplicada.",
   "settingsTooLong": "Limite as regras a 2.000 caracteres e a chave de API a 1.000 caracteres.",
-  "tooManyTabs": "Organize no máximo 200 abas não fixadas por janela. Divida esta janela antes de tentar novamente.",
   "invalidPlan": "A disposição proposta violou uma restrição de abas. Ela não foi aplicada.",
   "windowChanged": "As abas ou os grupos mudaram durante o planejamento. Organize novamente para usar a disposição atual.",
   "settingsChanged": "As configurações mudaram durante o planejamento. Execute a organização ou a visualização novamente.",
