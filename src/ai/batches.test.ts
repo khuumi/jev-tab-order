@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { createDecisionProvider } from "@/src/ai/providers";
 import { createJudge } from "@/src/ai/jev";
 import { buildPlan } from "@/src/organize/plan";
 import { DEFAULT_SETTINGS } from "@/src/settings/state";
@@ -255,7 +256,7 @@ it("keeps scoped targets, candidates, and their group members", async () => {
   const fetch = vi.fn(async (_url, init: RequestInit) => {
     const payload = JSON.parse(String(init.body));
     payloads.push(payload);
-    return Object.keys(payload.questions).length > 1
+    return payload.state.tabs.length > 3
       ? new Response("", { status: 413 })
       : respond(payload.questions);
   });
@@ -268,7 +269,129 @@ it("keeps scoped targets, candidates, and their group members", async () => {
     },
     rank_tab_9: scores.rank_tab_0,
   });
-  expect(payloads[1].state.tabs).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
-  expect(payloads[1].state.groups).toEqual(state.groups);
-  expect(payloads[2].state.tabs).toEqual([{ id: 9 }]);
+  expect(payloads[1].state).toEqual(state);
+  expect(payloads[2].state.tabs).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+  expect(payloads[2].state.groups).toEqual(state.groups);
+  expect(payloads[3].state).toEqual(state);
+  expect(payloads[4].state.tabs).toEqual([{ id: 9 }]);
+});
+
+it.each(["budget", "tokenLimit"])(
+  "retains full window context while splitting questions after %s",
+  async (trigger) => {
+    const state = {
+      rules: "Rank each block by its position among state.blocks",
+      tabs: [11, 22, 33, 44].map((id) => ({ id, title: `Tab ${id}` })),
+      groups: [],
+      blocks: [11, 22, 33, 44].map((id) => ({ key: `topic_${id}`, tabIds: [String(id)] })),
+    };
+    const questions = Object.fromEntries(
+      state.blocks.map((block) => [
+        `rank_block_${block.key}`,
+        { ...scores.rank_tab_0, instructions: `Rank ${block.key} among state.blocks` },
+      ]),
+    );
+    const settings = { apiKey: "test" };
+    const signal = new AbortController().signal;
+    const provider = createDecisionProvider(settings, signal);
+    // The full state fits with two questions, but the aggregate does not.
+    const budget = provider.requestBytes({
+      state,
+      questions: Object.fromEntries(Object.entries(questions).slice(0, 2)),
+    });
+    expect(provider.requestBytes({ state, questions })).toBeGreaterThan(budget);
+    let rejectLarge = false;
+    const fetch = vi.fn(async (_url, init: RequestInit) => {
+      const payload = JSON.parse(String(init.body));
+      if (trigger === "budget" && rejectLarge)
+        expect(provider.requestBytes(payload)).toBeLessThanOrEqual(budget);
+      // A context-sensitive responder catches both missing blocks and an
+      // altered ordering; the prior responder ignored state entirely.
+      expect(payload.state).toEqual(state);
+      if (trigger === "tokenLimit" && rejectLarge && Object.keys(payload.questions).length > 2)
+        return new Response("", { status: 413 });
+      const response = await respond(payload.questions).json();
+      for (const [id, answer] of Object.entries(response.answers)) {
+        const index = payload.state.blocks.findIndex(
+          (block: { key: string }) => `rank_block_${block.key}` === id,
+        );
+        Object.assign(answer as object, {
+          score: index,
+          probabilities: Object.fromEntries(
+            [0, 1, 2, 3, 4].map((level) => [level, level === index ? 1 : 0]),
+          ),
+        });
+      }
+      return Response.json(response);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const baseline = await createJudge(settings, signal)(state, questions);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockClear();
+    rejectLarge = true;
+    const batched = await createJudge(settings, signal, {
+      maxRequestBytes: trigger === "budget" ? budget : undefined,
+    })(state, questions);
+    expect(batched).toEqual(baseline);
+    expect(fetch).toHaveBeenCalledTimes(trigger === "budget" ? 2 : 3);
+  },
+);
+
+it("scopes only a question that cannot fit with the full state", async () => {
+  const state = {
+    rules: "Rank by rules",
+    tabs: Array.from({ length: 10 }, (_, id) => ({ id, title: "Context ".repeat(30) })),
+    groups: [],
+    blocks: Array.from({ length: 10 }, (_, id) => ({ key: `topic_${id}`, tabIds: [String(id)] })),
+  };
+  const questions = {
+    rank_tab_1: scores.rank_tab_0,
+    rank_tab_9: { ...scores.rank_tab_0, instructions: "Detailed ranking instruction ".repeat(20) },
+  };
+  const settings = { apiKey: "test" };
+  const signal = new AbortController().signal;
+  const provider = createDecisionProvider(settings, signal);
+  const budget = provider.requestBytes({ state, questions: { rank_tab_1: questions.rank_tab_1 } });
+  expect(provider.requestBytes({ state, questions: {} })).toBeLessThan(budget);
+  const payloads: { state: typeof state; questions: Record<string, Question> }[] = [];
+  const fetch = vi.fn(async (_url, init: RequestInit) => {
+    const payload = JSON.parse(String(init.body));
+    payloads.push(payload);
+    expect(provider.requestBytes(payload)).toBeLessThanOrEqual(budget);
+    return respond(payload.questions);
+  });
+  vi.stubGlobal("fetch", fetch);
+  const answers = await createJudge(settings, signal, { maxRequestBytes: budget })(
+    state,
+    questions,
+  );
+  expect(Object.keys(answers)).toEqual(Object.keys(questions));
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(payloads[0].state).toEqual(state);
+  expect(payloads[1].state.tabs).toEqual([state.tabs[9]]);
+  expect(payloads[1].state.blocks).toEqual([state.blocks[9]]);
+});
+
+it("packs scoped questions together when full context alone exceeds the budget", async () => {
+  const state = {
+    rules: "Rank by rules",
+    tabs: Array.from({ length: 20 }, (_, id) => ({ id, title: "Context ".repeat(30) })),
+    groups: [],
+    blocks: Array.from({ length: 20 }, (_, id) => ({ key: `topic_${id}`, tabIds: [String(id)] })),
+  };
+  const questions = { rank_tab_1: scores.rank_tab_0, rank_tab_9: scores.rank_tab_0 };
+  const settings = { apiKey: "test" };
+  const signal = new AbortController().signal;
+  const provider = createDecisionProvider(settings, signal);
+  const budget = 1500;
+  expect(provider.requestBytes({ state, questions: {} })).toBeGreaterThan(budget);
+  const fetch = vi.fn(async (_url, init: RequestInit) => {
+    const payload = JSON.parse(String(init.body));
+    expect(provider.requestBytes(payload)).toBeLessThanOrEqual(budget);
+    expect(payload.state.tabs).toEqual([state.tabs[1], state.tabs[9]]);
+    return respond(payload.questions);
+  });
+  vi.stubGlobal("fetch", fetch);
+  await createJudge(settings, signal, { maxRequestBytes: budget })(state, questions);
+  expect(fetch).toHaveBeenCalledTimes(1);
 });

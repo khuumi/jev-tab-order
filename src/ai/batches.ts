@@ -40,15 +40,20 @@ export const decideBatches = async (
       }
     }
     if (entries.length > 1) {
+      // If context alone exceeds the budget, no question split can retain it.
+      // Scope and pack together rather than making one call per question.
+      if (!scoped && !fits && provider.requestBytes({ state, questions: {} }) > budget)
+        return run(entries, true);
       if (fits) {
         // A provider rejected our estimate: halve only the failed work.
         const middle = Math.ceil(entries.length / 2);
         return {
-          ...(await run(entries.slice(0, middle), true)),
-          ...(await run(entries.slice(middle), true)),
+          ...(await run(entries.slice(0, middle), false)),
+          ...(await run(entries.slice(middle), false)),
         };
       }
-      // Pack as much work as the measured budget allows, retaining order.
+      // Pack questions against the original window context first. A smaller
+      // question batch must not lose peers just because the aggregate is large.
       const answers: Record<string, Answer> = {};
       let pending: [string, Question][] = [];
       for (const entry of entries) {
@@ -56,14 +61,17 @@ export const decideBatches = async (
         const trial = Object.fromEntries([...pending, entry]);
         if (
           pending.length &&
-          provider.requestBytes({ state: scopeState(state, trial), questions: trial }) > budget
+          provider.requestBytes({
+            state: scoped ? scopeState(state, trial) : state,
+            questions: trial,
+          }) > budget
         ) {
-          Object.assign(answers, await run(pending, true));
+          Object.assign(answers, await run(pending, scoped));
           pending = [];
         }
         pending.push(entry);
       }
-      if (pending.length) Object.assign(answers, await run(pending, true));
+      if (pending.length) Object.assign(answers, await run(pending, scoped));
       return answers;
     }
     if (
@@ -93,11 +101,11 @@ export const decideBatches = async (
         },
       ],
     ];
-    const left = (await run(fragment(candidates.slice(0, middle)), true))[id];
+    const left = (await run(fragment(candidates.slice(0, middle)), false))[id];
     // Adjacency asks for the earliest matching candidate. A confident match
     // in the earlier partition cannot be superseded by a later candidate.
     if (neutral === "self" && confidentMatch(left, neutral)) return { [id]: left };
-    const right = (await run(fragment(candidates.slice(middle)), true))[id];
+    const right = (await run(fragment(candidates.slice(middle)), false))[id];
     if (neutral === "self") return { [id]: confidentMatch(right, neutral) ? right : left };
     const finalists = [left, right].filter((answer) => confidentMatch(answer, neutral));
     if (!finalists.length) return { [id]: left };
@@ -107,7 +115,7 @@ export const decideBatches = async (
     if (candidates.length === 2) throw limitError;
     return run(
       fragment(finalists.map((answer) => [answer.choice, question.criteria[answer.choice]])),
-      true,
+      false,
     );
   };
   return Object.keys(questions).length ? run(Object.entries(questions), false) : {};
