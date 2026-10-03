@@ -5,7 +5,6 @@ const scenarios = [
     name: "invalid local names skip new groups but still sort",
     choice: "rank",
     confidence: 1,
-    create: "yes",
     allow: true,
     namingFailure: true,
     expected: ["Pinned", "A1", "A2", "Add", "Solo", "B1", "B2", "C1", "C2", "D1", "D2"],
@@ -14,7 +13,6 @@ const scenarios = [
     name: "rejects conflicting " + guard,
     choice: "rank",
     confidence: 1,
-    create: "yes",
     allow: true,
     expected: ["Pinned", "A1", "A2", "Add", "Solo", "B1", "B2", "C1", "C2", "D1", "D2"],
     guard,
@@ -23,7 +21,6 @@ const scenarios = [
     name: "restores after movement failure: " + failure,
     choice: "rank",
     confidence: 1,
-    create: "yes",
     allow: true,
     expected: [] as string[],
     failure,
@@ -32,7 +29,6 @@ const scenarios = [
     name: "ascending with existing-group assignment and two new groups",
     choice: "rank",
     confidence: 1,
-    create: "yes",
     allow: true,
     expected: ["Pinned", "A1", "A2", "Add", "Solo", "B1", "B2", "C1", "C2", "D1", "D2"],
   },
@@ -40,7 +36,6 @@ const scenarios = [
     name: "descending with existing and new groups",
     choice: "reverse",
     confidence: 1,
-    create: "yes",
     allow: true,
     expected: ["Pinned", "D2", "D1", "C2", "C1", "B2", "B1", "Solo", "Add", "A2", "A1"],
   },
@@ -48,7 +43,6 @@ const scenarios = [
     name: "ties keep original order inside and between blocks",
     choice: "tie",
     confidence: 1,
-    create: "no",
     allow: true,
     expected: ["Pinned", "B2", "B1", "Solo", "A2", "A1", "Add", "C2", "C1", "D2", "D1"],
   },
@@ -56,15 +50,13 @@ const scenarios = [
     name: "low-confidence comparisons keep original order",
     choice: "reverse",
     confidence: 0.49,
-    create: "no",
     allow: true,
     expected: ["Pinned", "B2", "B1", "Solo", "A2", "A1", "Add", "C2", "C1", "D2", "D1"],
   },
   {
-    name: "settings prohibit creation despite Jev yes",
+    name: "settings prohibit creation despite related topics",
     choice: "rank",
     confidence: 1,
-    create: "yes",
     allow: false,
     expected: ["Pinned", "A1", "A2", "Add", "Solo", "B1", "B2", "C1", "C2", "D1", "D2"],
   },
@@ -115,6 +107,7 @@ for (const scenario of scenarios) {
     }, "namingFailure" in scenario);
     await context.route("https://openrouter.ai/api/alpha/decisions", (route) => {
       const { state, questions } = route.request().postDataJSON();
+      expect(questions).not.toHaveProperty("create");
       const answers = Object.fromEntries(
         Object.entries(
           questions as Record<
@@ -124,7 +117,6 @@ for (const scenario of scenarios) {
         ).map(([key, q]) => {
           let choice = "self";
           let confidence = 1;
-          if (key === "create") choice = scenario.create;
           if (key.startsWith("membership_")) {
             const tab = state.tabs.find((t: { id: string }) => t.id === key.slice(11));
             choice =
@@ -351,7 +343,7 @@ for (const scenario of scenarios) {
       popup.getByRole("heading", { name: "Your tabs are organized", exact: true }),
     ).toBeVisible();
     const after = await snapshot();
-    const creates = scenario.allow && scenario.create === "yes" && !("namingFailure" in scenario);
+    const creates = scenario.allow && !("namingFailure" in scenario);
     expect(after.tabs).toEqual(
       scenario.expected.map((title) => ({
         title,

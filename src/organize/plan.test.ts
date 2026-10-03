@@ -284,6 +284,41 @@ it.each([true, false])(
   },
 );
 
+it("leaves confidently unrelated tabs ungrouped when new groups are allowed", async () => {
+  const naming = vi.fn(async () => "Unused");
+  const source: Snapshot = {
+    ...before,
+    groups: [],
+    tabs: [
+      { ...before.tabs[3], title: "Travel plans", url: "https://travel.test/" },
+      { ...before.tabs[4], title: "Database reference", url: "https://database.test/" },
+    ],
+  };
+  const result = await buildPlan(
+    source,
+    { ...DEFAULT_SETTINGS, allowNewGroups: true },
+    async (state, questions) => {
+      expect(questions).not.toHaveProperty("create");
+      const answers = await judge(state, questions);
+      answers.topic_5 = {
+        type: "choice",
+        choice: "self",
+        confidence: 1,
+        probabilities: { self: 1, "4": 0 },
+      };
+      return answers;
+    },
+    naming,
+    () => {},
+  );
+  expect(result.blocks).toEqual([
+    { key: "topic_4", title: "", tabIds: [4], create: false },
+    { key: "topic_5", title: "", tabIds: [5], create: false },
+  ]);
+  expect(naming).not.toHaveBeenCalled();
+  expect(result.warnings).toEqual([]);
+});
+
 it.each(["none", "uncertainMembership", "uncertainTopic", "self"])(
   "preserves separate tabs for %s decisions",
   async (mode) => {
