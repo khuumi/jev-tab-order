@@ -95,7 +95,7 @@ it.each(["openrouter", "typesafe", "custom"] as const)(
     const single = await plan(budget);
     expect(fetch).toHaveBeenCalledTimes(1);
     fetch.mockClear();
-    budget = 16000;
+    budget = 64000;
     expect(await plan(budget)).toEqual(single);
     expect(fetch.mock.calls.length).toBeGreaterThan(1);
   },
@@ -267,7 +267,11 @@ it("keeps scoped targets, candidates, and their group members", async () => {
       instructions: "Choose a group",
       criteria: { none: "Ungrouped", group_7: "Related" },
     },
-    rank_tab_9: scores.rank_tab_0,
+    membership_9: {
+      type: "choice",
+      instructions: "Keep unrelated tabs ungrouped",
+      criteria: { none: "Ungrouped" },
+    },
   });
   expect(payloads[1].state).toEqual(state);
   expect(payloads[2].state.tabs).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
@@ -337,7 +341,7 @@ it.each(["budget", "tokenLimit"])(
   },
 );
 
-it("scopes only a question that cannot fit with the full state", async () => {
+it("scopes only a choice question that cannot fit with the full state", async () => {
   const state = {
     rules: "Rank by rules",
     tabs: Array.from({ length: 10 }, (_, id) => ({ id, title: "Context ".repeat(30) })),
@@ -346,7 +350,11 @@ it("scopes only a question that cannot fit with the full state", async () => {
   };
   const questions = {
     rank_tab_1: scores.rank_tab_0,
-    rank_tab_9: { ...scores.rank_tab_0, instructions: "Detailed ranking instruction ".repeat(20) },
+    membership_9: {
+      type: "choice" as const,
+      instructions: "Detailed membership instruction ".repeat(20),
+      criteria: { none: "Ungrouped" },
+    },
   };
   const settings = { apiKey: "test" };
   const signal = new AbortController().signal;
@@ -379,7 +387,18 @@ it("packs scoped questions together when full context alone exceeds the budget",
     groups: [],
     blocks: Array.from({ length: 20 }, (_, id) => ({ key: `topic_${id}`, tabIds: [String(id)] })),
   };
-  const questions = { rank_tab_1: scores.rank_tab_0, rank_tab_9: scores.rank_tab_0 };
+  const questions = {
+    membership_1: {
+      type: "choice" as const,
+      instructions: "Keep unrelated tabs ungrouped",
+      criteria: { none: "Ungrouped" },
+    },
+    membership_9: {
+      type: "choice" as const,
+      instructions: "Keep unrelated tabs ungrouped",
+      criteria: { none: "Ungrouped" },
+    },
+  };
   const settings = { apiKey: "test" };
   const signal = new AbortController().signal;
   const provider = createDecisionProvider(settings, signal);
@@ -394,4 +413,102 @@ it("packs scoped questions together when full context alone exceeds the budget",
   vi.stubGlobal("fetch", fetch);
   await createJudge(settings, signal, { maxRequestBytes: budget })(state, questions);
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it.each(["rank_tab_9", "rank_block_topic_9"])(
+  "fails explicitly when full peer context alone exceeds the budget for %s",
+  async (id) => {
+    const state = {
+      rules: "Rank by position among all peers",
+      tabs: Array.from({ length: 20 }, (_, id) => ({ id, title: "Context ".repeat(30) })),
+      groups: [],
+      blocks: Array.from({ length: 20 }, (_, id) => ({ key: `topic_${id}`, tabIds: [String(id)] })),
+    };
+    const settings = { apiKey: "test" };
+    const signal = new AbortController().signal;
+    const provider = createDecisionProvider(settings, signal);
+    const budget = 1500;
+    expect(provider.requestBytes({ state, questions: {} })).toBeGreaterThan(budget);
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    // A mixed batch also must fail before sending any choice-only work.
+    await expect(
+      createJudge(settings, signal, { maxRequestBytes: budget })(state, {
+        membership_1: {
+          type: "choice",
+          instructions: "Choose a group",
+          criteria: { none: "Ungrouped" },
+        },
+        [id]: { ...scores.rank_tab_0, instructions: "Rank against the surrounding set" },
+      }),
+    ).rejects.toThrow("tokenLimit");
+    expect(fetch).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["budget", "tokenLimit"])(
+  "never scopes an indivisible score question after %s",
+  async (trigger) => {
+    const state = {
+      rules: "Rank the target among all blocks",
+      tabs: [{ id: 1 }, { id: 9 }],
+      groups: [],
+      blocks: [
+        { key: "topic_1", tabIds: ["1"] },
+        { key: "topic_9", tabIds: ["9"] },
+      ],
+    };
+    const questions = { rank_block_topic_9: scores.rank_tab_0 };
+    const settings = { apiKey: "test" };
+    const signal = new AbortController().signal;
+    const provider = createDecisionProvider(settings, signal);
+    // Full state alone fits; adding even one score question does not.
+    const budget = provider.requestBytes({ state, questions: {} });
+    const fetch = vi.fn(async (_url, init: RequestInit) => {
+      const payload = JSON.parse(String(init.body));
+      expect(payload.state).toEqual(state);
+      return new Response("", { status: 413 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    const result = createJudge(settings, signal, {
+      maxRequestBytes: trigger === "budget" ? budget : undefined,
+    })(state, questions);
+    if (trigger === "budget") await expect(result).rejects.toThrow("tokenLimit");
+    else
+      await expect(result).rejects.toMatchObject({
+        message: "tokenLimit",
+        cause: { httpStatus: 413 },
+      });
+    expect(fetch).toHaveBeenCalledTimes(trigger === "budget" ? 0 : 1);
+  },
+);
+
+it("does not return or name a large-window plan when ranking context cannot fit", async () => {
+  const source: Snapshot = {
+    windowId: 1,
+    groups: [],
+    tabs: Array.from({ length: 240 }, (_, index) => ({
+      id: index + 1,
+      index,
+      title: `Related page ${index}`,
+      url: `https://example.test/${index}`,
+      groupId: -1,
+      pinned: false,
+    })),
+  };
+  const settings = { ...DEFAULT_SETTINGS, apiKey: "test", allowNewGroups: true };
+  const fetch = vi.fn();
+  const naming = vi.fn(async () => "Related");
+  vi.stubGlobal("fetch", fetch);
+  await expect(
+    buildPlan(
+      source,
+      settings,
+      createJudge(settings, new AbortController().signal, { maxRequestBytes: 16000 }),
+      naming,
+      () => {},
+    ),
+  ).rejects.toThrow("tokenLimit");
+  expect(fetch).not.toHaveBeenCalled();
+  expect(naming).not.toHaveBeenCalled();
 });

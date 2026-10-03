@@ -41,9 +41,12 @@ export const decideBatches = async (
     }
     if (entries.length > 1) {
       // If context alone exceeds the budget, no question split can retain it.
-      // Scope and pack together rather than making one call per question.
-      if (!scoped && !fits && provider.requestBytes({ state, questions: {} }) > budget)
+      // Rank questions need their full peer context. Never silently return
+      // scores from a reduced window when no full-context batch can fit.
+      if (!scoped && !fits && provider.requestBytes({ state, questions: {} }) > budget) {
+        if (entries.some(([, question]) => question.type === "score")) throw limitError;
         return run(entries, true);
+      }
       if (fits) {
         // A provider rejected our estimate: halve only the failed work.
         const middle = Math.ceil(entries.length / 2);
@@ -127,9 +130,12 @@ const confidentMatch = (answer: Answer, neutral: string): answer is Choice =>
   answer.confidence >= 0.3 &&
   answer.probabilities[answer.choice] >= 0.5;
 
-// Only planner-shaped state is projected. Include the target, every offered
+// Only choice questions may project planner-shaped state. Scores compare
+// against their surrounding set and must retain the original context.
+// Include the target, every offered
 // candidate, and the members of referenced groups/blocks, with original order.
 const scopeState = (state: State, questions: Questions): State => {
+  if (Object.values(questions).some((question) => question.type === "score")) return state;
   if (
     !state ||
     Array.isArray(state) ||
