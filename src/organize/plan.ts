@@ -124,20 +124,6 @@ export const buildPlan = async (
   }
   report("sorting");
   const containers = [...groups.map((group) => group.tabIds.map((id) => byId.get(id)!)), remaining];
-  const tabRanks = new Map<string, number | undefined>();
-  for (const [index, container] of containers.entries()) {
-    const group = groups[index];
-    const peers = container.filter(isEligible).map((tab) => ({
-      key: String(tab.id),
-      ...describe(tab),
-      groupId: group?.groupId ?? -1,
-    }));
-    for (const [key, rank] of await rankPeers(peers, "tab", rules, judge, {
-      key: group?.key ?? "ungrouped",
-      title: group?.title ?? "",
-    }))
-      tabRanks.set(key, rank);
-  }
   const clusters = containers.map((container) => {
     const roots = new Map<number, number>();
     const buckets = new Map<number, Tab[]>();
@@ -150,19 +136,62 @@ export const buildPlan = async (
       roots.set(tab.id, root);
       buckets.set(root, [...(buckets.get(root) ?? []), tab]);
     }
-    const ranked = [...buckets.values()].map((cluster) =>
+    return [...buckets.values()];
+  });
+  const rankingContainers = containers.slice(0, groups.length).map((tabs, index) => ({
+    tabs,
+    key: groups[index].key,
+    title: groups[index].title,
+    groupId: groups[index].groupId!,
+  }));
+  const prospectiveGroups = settings.allowNewGroups
+    ? clusters[groups.length].filter((cluster) => cluster.length >= 2 && cluster.every(isEligible))
+    : [];
+  const prospectiveIds = new Set(
+    prospectiveGroups.flatMap((cluster) => cluster.map((tab) => tab.id)),
+  );
+  for (const cluster of prospectiveGroups)
+    rankingContainers.push({
+      tabs: cluster,
+      key: `topic_${cluster[0].id}`,
+      title: "",
+      groupId: -1,
+    });
+  rankingContainers.push({
+    tabs: remaining.filter((tab) => !prospectiveIds.has(tab.id)),
+    key: "ungrouped",
+    title: "",
+    groupId: -1,
+  });
+  const tabRanks = new Map<string, number | undefined>();
+  for (const container of rankingContainers) {
+    const peers = container.tabs.filter(isEligible).map((tab) => ({
+      key: String(tab.id),
+      ...describe(tab),
+      groupId: container.groupId,
+    }));
+    for (const [key, rank] of await rankPeers(peers, "tab", rules, judge, {
+      key: container.key,
+      title: container.title,
+    }))
+      tabRanks.set(key, rank);
+  }
+  const rankedClusters = clusters.map((buckets, index) => {
+    const ranked = buckets.map((cluster) =>
       orderByRank(cluster, (tab) => tabRanks.get(String(tab.id))),
     );
+    // Ungrouped clusters become separate blocks, ranked together in the next stage.
+    if (index === groups.length) return ranked;
     return orderByRank(ranked, (cluster) =>
       minimumRank(cluster.map((tab) => tabRanks.get(String(tab.id)))),
     );
   });
   groups.forEach((group, index) => {
-    group.tabIds = clusters[index].flatMap((cluster) => cluster.map((tab) => tab.id));
+    group.tabIds = rankedClusters[index].flatMap((cluster) => cluster.map((tab) => tab.id));
   });
   const allowCreate = settings.allowNewGroups;
   const ungrouped: Block[] = [];
-  for (const cluster of clusters[groups.length]) {
+  for (const cluster of rankedClusters[groups.length]) {
     const tabIds = cluster.map((tab) => tab.id);
     const title = "";
     const first = [...cluster].sort((a, b) => a.index - b.index)[0];

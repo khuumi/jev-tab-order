@@ -831,3 +831,33 @@ it.each(["tokenLimit", "cancelled", "invalidKey"])(
     expect(naming).not.toHaveBeenCalled();
   },
 );
+
+it("ranks prospective new groups against their own clustering peers", async () => {
+  const source: Snapshot = {
+    windowId: 1,
+    groups: [],
+    tabs: [4, 5, 6, 7].map((id, index) => ({ ...before.tabs[3], id, index })),
+  };
+  const contexts: unknown[] = [];
+  await buildPlan(
+    source,
+    { ...DEFAULT_SETTINGS, allowNewGroups: true },
+    async (state, questions) => {
+      if (Object.keys(questions).some((key) => key.startsWith("rank_tab_"))) contexts.push(state);
+      const answers = await judge(state, questions);
+      if (questions.topic_7)
+        answers.topic_7 = {
+          type: "choice",
+          choice: "6",
+          confidence: 1,
+          probabilities: { self: 0, "4": 0, "5": 0, "6": 1 },
+        };
+      return answers;
+    },
+    async () => "Related",
+    () => {},
+  );
+  expect(contexts).toHaveLength(2);
+  expect(contexts[0]).toMatchObject({ tabs: [{ id: "4" }, { id: "5" }] });
+  expect(contexts[1]).toMatchObject({ tabs: [{ id: "6" }, { id: "7" }] });
+});
