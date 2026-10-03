@@ -890,3 +890,66 @@ it("keeps original peer order when an earlier tab joins a later existing group",
   );
   expect(inspected).toBe(true);
 });
+
+it("runs independent structural judgments and container rankings in three request waves", async () => {
+  const pending: { questions: Parameters<Judge>[1]; finish: () => Promise<void> }[] = [];
+  const naming = vi.fn(async () => "Travel");
+  const parallelJudge: Judge = (state, questions) =>
+    new Promise((resolve) => {
+      pending.push({ questions, finish: async () => resolve(await judge(state, questions)) });
+    });
+  const plan = buildPlan(
+    before,
+    { ...DEFAULT_SETTINGS, allowNewGroups: true },
+    parallelJudge,
+    naming,
+    () => {},
+  );
+  await vi.waitFor(() => expect(pending).toHaveLength(2));
+  expect(pending[0].questions).toHaveProperty("membership_3");
+  expect(pending[1].questions).toHaveProperty("related_topic_3");
+  await Promise.all(pending.splice(0).map((request) => request.finish()));
+  await vi.waitFor(() => expect(pending).toHaveLength(2));
+  expect(
+    pending.every(({ questions }) =>
+      Object.keys(questions).every((key) => key.startsWith("rank_tab_")),
+    ),
+  ).toBe(true);
+  expect(naming).not.toHaveBeenCalled();
+  // Completion order cannot change the assembly of independently ranked containers.
+  await pending.pop()!.finish();
+  await pending.pop()!.finish();
+  await vi.waitFor(() => expect(pending).toHaveLength(1));
+  expect(pending[0].questions).toHaveProperty("rank_block_group_7");
+  expect(naming).not.toHaveBeenCalled();
+  await pending.pop()!.finish();
+  const result = await plan;
+  expect(result.blocks.map((block) => block.tabIds)).toEqual([
+    [2, 3],
+    [4, 5],
+  ]);
+  expect(naming).toHaveBeenCalledTimes(1);
+});
+
+it("waits for started sibling judgments before reporting a stage failure", async () => {
+  let finishSibling: (() => void) | undefined;
+  let finishedSibling = false;
+  const naming = vi.fn(async () => "Unused");
+  const failingJudge: Judge = async (_state, questions) => {
+    if (questions.membership_3) throw new Error("invalidKey");
+    await new Promise<void>((resolve) => {
+      finishSibling = resolve;
+    });
+    finishedSibling = true;
+    return {};
+  };
+  const plan = buildPlan(before, DEFAULT_SETTINGS, failingJudge, naming, () => {});
+  const outcome = plan.catch((error: Error) => {
+    expect(finishedSibling).toBe(true);
+    return error.message;
+  });
+  await vi.waitFor(() => expect(finishSibling).toBeDefined());
+  finishSibling!();
+  expect(await outcome).toBe("invalidKey");
+  expect(naming).not.toHaveBeenCalled();
+});

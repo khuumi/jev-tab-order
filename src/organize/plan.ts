@@ -1,3 +1,4 @@
+import { settleAll } from "@/src/ai/concurrent";
 import { isConfident } from "@/src/ai/jev";
 import { effectiveRules } from "@/src/settings/state";
 import { describe, isEligible } from "@/src/tabs/snapshot";
@@ -99,21 +100,22 @@ export const buildPlan = async (
   }
   report("classifying");
   // Questions are independent; the judge partitions them under its request budget.
-  const answers = Object.keys(questions).length ? await judge(state, questions) : {};
-  // Adjacency between blocks needs compact descriptions, not all member metadata.
-  if (Object.keys(relationships).length)
-    Object.assign(
-      answers,
-      await judge(
-        {
-          rules,
-          tabs: [],
-          groups: [],
-          blocks: originals.map((block) => compactBlock(block, byId)),
-        },
-        relationships,
-      ),
-    );
+  // Membership/tab adjacency and compact block adjacency are independent.
+  const [structure, relationshipsAnswered] = await settleAll([
+    Object.keys(questions).length ? judge(state, questions) : Promise.resolve({}),
+    Object.keys(relationships).length
+      ? judge(
+          {
+            rules,
+            tabs: [],
+            groups: [],
+            blocks: originals.map((block) => compactBlock(block, byId)),
+          },
+          relationships,
+        )
+      : Promise.resolve({}),
+  ]);
+  const answers: Awaited<ReturnType<Judge>> = { ...structure, ...relationshipsAnswered };
   const remaining: Tab[] = [];
   for (const tab of available) {
     const answer = answers[`membership_${tab.id}`];
@@ -164,20 +166,22 @@ export const buildPlan = async (
     groupId: -1,
   });
   const tabRanks = new Map<string, number | undefined>();
-  for (const container of rankingContainers) {
-    const peers = [...container.tabs]
-      .sort((a, b) => a.index - b.index)
-      .filter(isEligible)
-      .map((tab) => ({
-        key: String(tab.id),
-        ...describe(tab),
-        groupId: container.groupId,
-      }));
-    for (const [key, rank] of await rankPeers(peers, "tab", rules, judge, {
-      key: container.key,
-      title: container.title,
-    }))
-      tabRanks.set(key, rank);
+  // Independent containers use separate peer context, with at most four active
+  // rankings. This keeps small windows from waiting on each container in turn.
+  for (let offset = 0; offset < rankingContainers.length; offset += 4) {
+    const results = await settleAll(
+      rankingContainers.slice(offset, offset + 4).map(async (container) => {
+        const peers = [...container.tabs]
+          .sort((a, b) => a.index - b.index)
+          .filter(isEligible)
+          .map((tab) => ({ key: String(tab.id), ...describe(tab), groupId: container.groupId }));
+        return rankPeers(peers, "tab", rules, judge, {
+          key: container.key,
+          title: container.title,
+        });
+      }),
+    );
+    for (const result of results) for (const [key, rank] of result) tabRanks.set(key, rank);
   }
   const rankedClusters = clusters.map((buckets, index) => {
     const ranked = buckets.map((cluster) =>
