@@ -163,9 +163,26 @@ const scopeState = (state: State, questions: Questions): State => {
     typeof entry === "object" &&
     !Array.isArray(entry) &&
     (keys.has(String(entry.key)) ||
-      (Array.isArray(entry.tabIds) && entry.tabIds.some((id) => ids.has(String(id)))));
-  const groups = state.groups.filter(selected);
-  const blocks = state.blocks.filter(selected);
+      (String(entry.key).startsWith("topic_") &&
+        Array.isArray(entry.tabIds) &&
+        entry.tabIds.some((id) => ids.has(String(id)))));
+  // Explicitly offered groups retain their members. A tab-only adjacency
+  // decision also retains its containing group name, but only referenced tabs.
+  const project = (entries: State[]) =>
+    entries.flatMap((entry) => {
+      if (selected(entry)) return [entry];
+      if (
+        !entry ||
+        typeof entry !== "object" ||
+        Array.isArray(entry) ||
+        !Array.isArray(entry.tabIds)
+      )
+        return [];
+      const members = entry.tabIds.filter((id) => ids.has(String(id)));
+      return members.length ? [{ ...entry, tabIds: members }] : [];
+    });
+  const groups = project(state.groups);
+  const blocks = project(state.blocks);
   for (const entry of [...groups, ...blocks]) {
     if (entry && typeof entry === "object" && !Array.isArray(entry) && Array.isArray(entry.tabIds))
       entry.tabIds.forEach((id) => ids.add(String(id)));

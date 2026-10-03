@@ -20,7 +20,7 @@
 
 A Chrome extension that uses [Jev](https://typesafe.ai/) to organize tabs and groups in the current window by meaning and your sorting rules. Pinned tabs and existing group memberships stay intact.
 
-**Organize the entire window with bounded Jev requests.** Small windows use one request; larger workloads are split automatically.
+**Organize the entire window with bounded Jev requests.** Planning uses staged requests; larger workloads are split automatically.
 
 ## Getting Started
 
@@ -58,7 +58,7 @@ The extension collects the window's tab information, asks Jev for judgments, the
 
 1. **Collect information — extension:** Read tab titles, URLs, current positions, and group memberships. Prepare the rules and group names alongside them. Pinned tabs are excluded from Jev's input; page bodies are not read. URL credentials, query strings, and fragments are removed before sending.
 2. **Judge meaning — Jev:** Evaluate questions in **requests bounded by serialized size**: which existing group an ungrouped tab fits, which tabs or groups belong next to each other, how early or late each should appear under the rules. Candidates include domains or group names to make the choices clear. Jev returns choices and numeric priority scores, with probabilities and confidence.
-3. **Build the layout — extension:** Use accepted choices to assign ungrouped tabs and gather related items into adjacent sets. Sort within and between those sets using Jev's scores, with lower scores placed earlier. Answers below the acceptance thresholds are ignored; ties preserve their previous order, and items without an accepted score keep their slot in that sorting step. These calculations run locally, without further Jev calls.
+3. **Build the layout — extension:** Use accepted choices to assign ungrouped tabs and gather related items into adjacent sets. Sort within and between those sets using Jev's scores, with lower scores placed earlier. Answers below the acceptance thresholds are ignored; ties preserve their previous order, and items without an accepted score keep their slot in that sorting step. Layout assembly runs locally; ranking can request additional bounded comparisons.
 4. **Name new groups — Chrome's local AI, when enabled:** If the setting allows new groups and Jev confidently clusters the tabs, related ungrouped tabs can form a group. Chrome's built-in AI generates its name from tab titles. If naming is unavailable, those tabs remain adjacent without a new group.
 5. **Validate and apply — extension:** Check that the plan preserves every tab, pinned tabs, and existing group memberships, then move tabs and groups through Chrome APIs. Preview stops before applying; undo restores the saved layout without calling Jev.
 
@@ -66,9 +66,9 @@ For example, if Jev selects “GitHub” as an ungrouped tab's destination and t
 
 ### What the Jev Request Contains
 
-With OpenRouter selected, the extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **Each API call contains a bounded batch of questions**, prepared before their answers are used.
+With OpenRouter selected, the extension uses native `fetch` to send JSON to `POST https://openrouter.ai/api/alpha/decisions` with `model: "~typesafe/jev-latest"`. The body contains shared context (`state`) and multiple judgments (`questions`). **Each API call contains a bounded batch of questions**. Planning resolves structure before preparing ranking questions.
 
-- **`state` — information to judge:** The active rules, web tab IDs, titles, sanitized URLs, and group memberships; existing group names and member IDs; and the current sequence of groups and ungrouped tabs. Detailed tab information is shared across questions.
+- **`state` — information to judge:** The active rules, web tab IDs, titles, sanitized URLs, and group memberships; existing group names and member IDs; and the current sequence of groups and ungrouped tabs. Each planning stage sends only its relevant context.
 - **`questions` — what to decide:** Each question contains `type` (Choice or Score), `instructions` (the judgment to make under the rules), and `criteria` (available choices or ordered scoring levels).
 
 | Judgment                                                       | Type                  | Requested answer                                                                                                                               |
@@ -78,17 +78,13 @@ With OpenRouter selected, the extension uses native `fetch` to send JSON to `POS
 | Adjacent group or ungrouped tab                                | **Choice** (`choice`) | An earlier candidate's ID, with its group name or domain attached, or `self` to keep it separate                                               |
 | Position priority for each tab and each group or ungrouped tab | **Score** (`score`)   | A score on five levels: earliest, early, middle/no specified order, late, latest                                                               |
 
-Choice returns the selected ID in `choice`; the extension uses it to connect tabs or assign a destination group. Score returns a value from **0 to 4**, potentially fractional, rather than a final tab position. The extension uses it as a sorting priority. Both include `probabilities` and `confidence`, which the extension checks before using the answer. Score also includes `legend`, mapping level numbers to their descriptions.
+Choice returns the selected ID in `choice`; the extension uses it to connect tabs or assign a destination group. Score returns a value from **0 to 4**, potentially fractional, rather than a final tab position. The extension uses it as a sorting priority or as a local comparison during merge sorting. Both include `probabilities` and `confidence`, which the extension checks before using the answer. Score also includes `legend`, mapping level numbers to their descriptions.
 
-### Minimal Request and Response Example
+### Staged Request Example
 
-This example has two unpinned tabs: tab `1` (GitHub) in existing group `7` (GitHub), followed by ungrouped tab `2` (GitHub Docs). The custom rule is “Add GitHub tabs to the GitHub group. Put documentation first.” and new group creation is disabled. The request below is the complete JSON body produced by `buildPlan` and the OpenRouter transport for this input. All six questions and their actual instructions are included; no fields or questions are omitted.
+Two unpinned tabs start in different containers: tab `1` (GitHub) belongs to group `7` (GitHub), and tab `2` (GitHub Docs) is ungrouped. The first request resolves membership. Block adjacency uses a separate compact context. The examples omit the transport's model field; fixed instructions are English and user rules are sent unchanged.
 
-`state.blocks` lists the current window-level movement units in order: each existing group is one block, and each ungrouped tab is one block. `key` identifies the block, `title` is its group name (empty for ungrouped tabs), and `tabIds` references the detailed entries in `state.tabs`. Jev uses these units to judge the order and adjacency of whole groups and ungrouped tabs.
-
-The prose in the example rules, `instructions`, `criteria`, and `legend` follows the language of each README; the Japanese README translates it for readability. The implementation’s fixed instructions, criteria, and default rules are English, as was the custom rule used to capture this example. User-entered custom rules are sent unchanged, without translation. JSON structure, keys, IDs, URLs, and numbers are unchanged.
-
-**Request body:**
+**Structural request:**
 
 ```json
 {
@@ -129,63 +125,11 @@ The prose in the example rules, `instructions`, `criteria`, and `legend` follows
     ]
   },
   "questions": {
-    "rank_tab_1": {
-      "type": "score",
-      "instructions": "Rate the position of tab 1 (Domain: github.com) within its group according to state.rules; earlier is lower. Use the middle level if no order is specified.",
-      "criteria": [
-        "Earliest priority under the rules",
-        "Early priority under the rules",
-        "Middle priority or no distinguished order under the rules",
-        "Late priority under the rules",
-        "Latest priority under the rules"
-      ]
-    },
     "membership_2": {
       "type": "choice",
       "instructions": "According to state.rules, select an existing group for ungrouped tab 2 (Domain: docs.github.com), or none.",
       "criteria": {
         "none": "Keep ungrouped",
-        "group_7": "Group name: \"GitHub\""
-      }
-    },
-    "rank_tab_2": {
-      "type": "score",
-      "instructions": "Rate the position of tab 2 (Domain: docs.github.com) within its group according to state.rules; earlier is lower. Use the middle level if no order is specified.",
-      "criteria": [
-        "Earliest priority under the rules",
-        "Early priority under the rules",
-        "Middle priority or no distinguished order under the rules",
-        "Late priority under the rules",
-        "Latest priority under the rules"
-      ]
-    },
-    "rank_block_group_7": {
-      "type": "score",
-      "instructions": "Rate the position of block group_7 (Group name: \"GitHub\") among state.blocks according to state.rules; earlier is lower. Use the middle level if no order is specified.",
-      "criteria": [
-        "Earliest priority under the rules",
-        "Early priority under the rules",
-        "Middle priority or no distinguished order under the rules",
-        "Late priority under the rules",
-        "Latest priority under the rules"
-      ]
-    },
-    "rank_block_topic_2": {
-      "type": "score",
-      "instructions": "Rate the position of block topic_2 (Domain: docs.github.com) among state.blocks according to state.rules; earlier is lower. Use the middle level if no order is specified.",
-      "criteria": [
-        "Earliest priority under the rules",
-        "Early priority under the rules",
-        "Middle priority or no distinguished order under the rules",
-        "Late priority under the rules",
-        "Latest priority under the rules"
-      ]
-    },
-    "related_topic_2": {
-      "type": "choice",
-      "instructions": "According to state.rules, select the earliest candidate block to place adjacent to block topic_2 (Domain: docs.github.com), or self.",
-      "criteria": {
-        "self": "Keep separate",
         "group_7": "Group name: \"GitHub\""
       }
     }
@@ -194,117 +138,61 @@ The prose in the example rules, `instructions`, `criteria`, and `legend` follows
 }
 ```
 
-**Complete response example (mock):** This includes all six answers plus `model` and `usage`. It is not a captured response from the live Jev API: the model identifier, judgments, probabilities, confidence, and token counts are illustrative values. Actual responses depend on the API; this example does not guarantee these values.
+If membership selects `group_7`, both tabs become peers. A later request ranks only those final peers, retaining the container name and final membership:
 
 ```json
 {
-  "model": "~typesafe/jev-latest",
-  "answers": {
+  "state": {
+    "rules": "Add GitHub tabs to the GitHub group. Put documentation first.",
+    "container": {
+      "key": "group_7",
+      "title": "GitHub"
+    },
+    "tabs": [
+      {
+        "key": "1",
+        "id": "1",
+        "title": "GitHub",
+        "url": "https://github.com/",
+        "groupId": 7
+      },
+      {
+        "key": "2",
+        "id": "2",
+        "title": "GitHub Docs",
+        "url": "https://docs.github.com/",
+        "groupId": 7
+      }
+    ]
+  },
+  "questions": {
     "rank_tab_1": {
       "type": "score",
-      "score": 2,
-      "confidence": 1,
-      "probabilities": {
-        "0": 0,
-        "1": 0,
-        "2": 1,
-        "3": 0,
-        "4": 0
-      },
-      "legend": {
-        "0": "Earliest priority under the rules",
-        "1": "Early priority under the rules",
-        "2": "Middle priority or no distinguished order under the rules",
-        "3": "Late priority under the rules",
-        "4": "Latest priority under the rules"
-      }
-    },
-    "membership_2": {
-      "type": "choice",
-      "choice": "group_7",
-      "confidence": 1,
-      "probabilities": {
-        "none": 0,
-        "group_7": 1
-      }
+      "instructions": "Rate the position of tab 1 among the complete ranking peers in state.tabs under state.rules; earlier is lower. Use the middle level if no order is specified.",
+      "criteria": [
+        "Earliest priority under the rules",
+        "Early priority under the rules",
+        "Middle priority or no distinguished order under the rules",
+        "Late priority under the rules",
+        "Latest priority under the rules"
+      ]
     },
     "rank_tab_2": {
       "type": "score",
-      "score": 0,
-      "confidence": 1,
-      "probabilities": {
-        "0": 1,
-        "1": 0,
-        "2": 0,
-        "3": 0,
-        "4": 0
-      },
-      "legend": {
-        "0": "Earliest priority under the rules",
-        "1": "Early priority under the rules",
-        "2": "Middle priority or no distinguished order under the rules",
-        "3": "Late priority under the rules",
-        "4": "Latest priority under the rules"
-      }
-    },
-    "rank_block_group_7": {
-      "type": "score",
-      "score": 2,
-      "confidence": 1,
-      "probabilities": {
-        "0": 0,
-        "1": 0,
-        "2": 1,
-        "3": 0,
-        "4": 0
-      },
-      "legend": {
-        "0": "Earliest priority under the rules",
-        "1": "Early priority under the rules",
-        "2": "Middle priority or no distinguished order under the rules",
-        "3": "Late priority under the rules",
-        "4": "Latest priority under the rules"
-      }
-    },
-    "rank_block_topic_2": {
-      "type": "score",
-      "score": 0,
-      "confidence": 1,
-      "probabilities": {
-        "0": 1,
-        "1": 0,
-        "2": 0,
-        "3": 0,
-        "4": 0
-      },
-      "legend": {
-        "0": "Earliest priority under the rules",
-        "1": "Early priority under the rules",
-        "2": "Middle priority or no distinguished order under the rules",
-        "3": "Late priority under the rules",
-        "4": "Latest priority under the rules"
-      }
-    },
-    "related_topic_2": {
-      "type": "choice",
-      "choice": "group_7",
-      "confidence": 1,
-      "probabilities": {
-        "self": 0,
-        "group_7": 1
-      }
+      "instructions": "Rate the position of tab 2 among the complete ranking peers in state.tabs under state.rules; earlier is lower. Use the middle level if no order is specified.",
+      "criteria": [
+        "Earliest priority under the rules",
+        "Early priority under the rules",
+        "Middle priority or no distinguished order under the rules",
+        "Late priority under the rules",
+        "Latest priority under the rules"
+      ]
     }
-  },
-  "usage": {
-    "input_tokens": 1000,
-    "output_tokens": 100
   }
 }
 ```
 
-The extension matches each answer to its question key. Here, `membership_2.choice` selects group `7`, and its probability and confidence pass the acceptance thresholds, so tab `2` is added to that group. `rank_tab_2.score: 0` gives it the earliest priority level. Its final position is calculated locally using the other tabs' answers too; this score alone does not mean “move to tab index 0.”
-
-`rank_block_topic_2` scores the ungrouped tab as a window-level block; `related_topic_2` selects the GitHub block as its neighbor. These judgments do not themselves change membership: that is the role of `membership_2`. Here, tab `2` joins the GitHub group, so it no longer moves as a separate block.
+Score answers use the five-level `legend` and probability distribution described above. One final block needs no block-ranking request. With multiple final blocks, a separate request uses compact block descriptors. New-group naming waits until ranking completes.
 
 ## Privacy
 
@@ -366,4 +254,8 @@ See the [release guide](.agents/skills/jev-tab-order-release/SKILL.md) for prepa
 
 The provider abstraction measures the UTF-8 JSON body, including model, rules, context, and questions, against a conservative 64,000-byte budget. `createJudge` accepts `maxRequestBytes` for integrations with smaller custom/local context windows. This is an input-size estimate, not a model tokenizer guarantee. Token-limit responses (HTTP 413 or recognized HTTP 400 errors) trigger further splitting; unrelated failures are not retried. A minimum useful request that still cannot fit returns the input-limit error.
 
-Questions are independent of earlier answers. Question batches retain the full original state whenever it fits, including after token-limit splits. Score questions always retain full state: if a single score question cannot fit with its original peer context, planning fails with the input-limit error instead of returning ranks from a reduced window. Only choice questions may scope state when a single question still cannot fit (or the full context alone exceeds the byte budget). Scoped batches include rules, target tabs/blocks, offered candidates, and referenced group/block members. Oversized adjacency choices search ordered candidate partitions for the earliest confident match; oversized membership choices compare confident partition winners. Ranking remains the existing five-level rules-based priority, and final membership, clustering, naming, and ordering are reconciled only after all answers resolve. The request counter shows progress. A cancelled run never applies a partial plan. Total comparison work may still be quadratic, but no individual request grows without a bound. Model judgments may vary with context and candidate partitions; deterministic fixtures verify the assembly contract rather than guaranteeing identical live-model answers.
+Planning is staged: resolve membership and adjacency, construct final containers, rank tabs within those containers, rank final blocks, then name new groups. Independent structural requests run together, and up to four container rankings run concurrently. Each stage waits for started requests to settle before reporting a failure. Tab ranking includes only eligible peers in the final container, including each prospective new group when creation is enabled. Block ranking uses compact descriptors: key, existing group title, original position, and up to three representative titles and sanitized URLs. It does not duplicate the rich window state.
+
+When the complete ranking peer set fits, five-level priority questions share that context. The batching layer never removes peers from a score question. If that context cannot fit, or the provider rejects it for size, the planner ranks the largest fitting partitions and reconciles them with stable merge sorting and two-peer comparisons. Partition scores sort only that partition and are never treated as global ranks. Two sibling partition subtrees can run concurrently, with deeper recursion kept serial. Each merge compares opposing partition heads under the same rules. Local comparison scores are used only to choose the next head; they are never treated as global ranks. Ties and uncertain comparisons take the left head. The deterministic comparison schedule also defines behavior for non-transitive model preferences. A pair that cannot fit returns the input-limit error. Singleton containers need no ranking request. Large rankings can require O(n log n) comparison requests.
+
+Choice questions retain full state when it fits and may scope to targets, offered candidates, and explicitly referenced group/block members otherwise. Tab adjacency keeps the containing group’s name and only the referenced member IDs, without expanding all members. Oversized adjacency choices search ordered candidate partitions for the earliest confident match; oversized membership choices compare confident partition winners. Naming starts only after all required decisions resolve. A cancelled run never applies a partial plan. Structural comparisons may still be quadratic. Model judgments can vary with context; deterministic fixtures verify reconciliation rather than identical live-model answers across strategies.

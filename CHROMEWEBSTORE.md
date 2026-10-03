@@ -548,6 +548,10 @@ Maximum: 500 characters. Supply the review credential separately before using th
 Requires Chrome 138+. The Password field contains the review OpenRouter API key. Right-click the extension icon, open Settings, enter the key, and save. Open several web tabs and an existing tab group. In Settings, select Preview current window, then Apply this layout and Undo. The toolbar icon organizes directly. New groups require Allow new groups and available Chrome built-in AI; without the model, sorting still works. Shortcuts: chrome://extensions/shortcuts.
 ```
 
+## Pending changes
+
+Updated 2026-10-03: large windows can be sorted through bounded comparisons. Existing memberships, preview, apply, and undo remain supported. This change does not require new permissions, store screenshots, or data-use disclosures. See `CHANGELOG.md` for unreleased changes.
+
 ## Transfer instructions
 
 Copy all specified values and localized text; upload the exact asset paths listed above. Preserve the password field for the publisher’s private review API key. Resolve the location data-use checkbox marked “要確認” before transferring that row; all other non-credential form values are specified. Before submission, ensure the updated `PRIVACY.md` is present on GitHub’s `main` branch; local edits do not update the linked public policy. Save listing/privacy/distribution changes as a draft and test instructions with their separate save button.

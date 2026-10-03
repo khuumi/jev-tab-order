@@ -93,7 +93,7 @@ it.each(["openrouter", "typesafe", "custom"] as const)(
         () => {},
       );
     const single = await plan(budget);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(3);
     fetch.mockClear();
     budget = 64000;
     expect(await plan(budget)).toEqual(single);
@@ -483,7 +483,7 @@ it.each(["budget", "tokenLimit"])(
   },
 );
 
-it("does not return or name a large-window plan when ranking context cannot fit", async () => {
+it("returns a large-window plan when full ranking context cannot fit", async () => {
   const source: Snapshot = {
     windowId: 1,
     groups: [],
@@ -497,18 +497,85 @@ it("does not return or name a large-window plan when ranking context cannot fit"
     })),
   };
   const settings = { ...DEFAULT_SETTINGS, apiKey: "test", allowNewGroups: true };
-  const fetch = vi.fn();
+  const fetch = vi.fn(async (_url, init: RequestInit) =>
+    respond(JSON.parse(String(init.body)).questions),
+  );
   const naming = vi.fn(async () => "Related");
   vi.stubGlobal("fetch", fetch);
-  await expect(
-    buildPlan(
-      source,
-      settings,
-      createJudge(settings, new AbortController().signal, { maxRequestBytes: 16000 }),
-      naming,
-      () => {},
-    ),
-  ).rejects.toThrow("tokenLimit");
-  expect(fetch).not.toHaveBeenCalled();
-  expect(naming).not.toHaveBeenCalled();
+  const plan = await buildPlan(
+    source,
+    settings,
+    createJudge(settings, new AbortController().signal, { maxRequestBytes: 16000 }),
+    naming,
+    () => {},
+  );
+  expect(plan.blocks.flatMap((block) => block.tabIds)).toHaveLength(240);
+  expect(fetch.mock.calls.length).toBeGreaterThan(1);
+  expect(naming).toHaveBeenCalledTimes(1);
 });
+
+it("reports cumulative requests across staged judge calls", async () => {
+  const progress = vi.fn();
+  const fetch = vi.fn(async (_url, init: RequestInit) =>
+    respond(JSON.parse(String(init.body)).questions),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const judge = createJudge({ apiKey: "test" }, new AbortController().signal, {
+    onRequest: progress,
+  });
+  await judge({ rules: "First stage" }, { rank_tab_1: scores.rank_tab_0 });
+  await judge({ rules: "Second stage" }, { rank_tab_2: scores.rank_tab_0 });
+  expect(progress.mock.calls).toEqual([[1], [2]]);
+});
+
+it.each(["budget", "413"])(
+  "retains containing group titles without unrelated members when adjacency is scoped by %s",
+  async (trigger) => {
+    const tabs = Array.from({ length: 80 }, (_, index) => ({
+      id: String(index + 1),
+      groupId: 7,
+      title: index === 0 ? "Docs" : index === 1 ? "Issue" : "Unrelated group member ".repeat(8),
+    }));
+    const group = { key: "group_7", title: "Development", tabIds: tabs.map((tab) => tab.id) };
+    const state = {
+      rules: "Inside Development, put docs before issues",
+      tabs,
+      groups: [group],
+      blocks: [group],
+    };
+    const settings = { apiKey: "test" };
+    const signal = new AbortController().signal;
+    const provider = createDecisionProvider(settings, signal);
+    const budget = trigger === "budget" ? 2000 : provider.maxRequestBytes;
+    expect(provider.requestBytes({ state, questions: {} })).toBeGreaterThan(2000);
+    const fetch = vi.fn(async (_url, init: RequestInit) => {
+      const payload = JSON.parse(String(init.body));
+      expect(provider.requestBytes(payload)).toBeLessThanOrEqual(budget);
+      if (payload.state.tabs.length > 2) return new Response("", { status: 413 });
+      expect(payload.state.tabs).toEqual(tabs.slice(0, 2));
+      expect(payload.state.groups).toEqual([{ ...group, tabIds: ["1", "2"] }]);
+      expect(payload.state.blocks).toEqual([{ ...group, tabIds: ["1", "2"] }]);
+      const choice = payload.state.groups[0]?.title === "Development" ? "1" : "self";
+      return Response.json({
+        answers: {
+          topic_2: {
+            type: "choice",
+            choice,
+            confidence: 1,
+            probabilities: { self: choice === "self" ? 1 : 0, "1": choice === "1" ? 1 : 0 },
+          },
+        },
+      });
+    });
+    vi.stubGlobal("fetch", fetch);
+    const answers = await createJudge(settings, signal, { maxRequestBytes: budget })(state, {
+      topic_2: {
+        type: "choice",
+        instructions: "Select the earliest related tab for tab 2 under state.rules",
+        criteria: { self: "No match", "1": "Docs" },
+      },
+    });
+    expect(answers.topic_2).toMatchObject({ choice: "1" });
+    expect(fetch).toHaveBeenCalledTimes(trigger === "budget" ? 1 : 2);
+  },
+);
