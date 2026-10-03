@@ -255,45 +255,69 @@ it("places related groups adjacent without changing their memberships", async ()
   ]);
 });
 
-it.each([
-  ["no", 1, 1, false],
-  ["yes", 0.29, 1, false],
-  ["yes", 1, 0.49, false],
-  ["yes", 0.3, 0.5, true],
-] as const)(
-  "gates creation on Jev %s, confidence %s, probability %s",
-  async (choice, confidence, probability, creates) => {
-    let names = 0;
+it.each([true, false])(
+  "uses the user setting to authorize new groups: %s",
+  async (allowNewGroups) => {
+    const naming = vi.fn(async () => "Travel");
     const result = await buildPlan(
-      before,
-      { ...DEFAULT_SETTINGS, allowNewGroups: true },
+      { ...before, groups: [], tabs: before.tabs.slice(3) },
+      { ...DEFAULT_SETTINGS, allowNewGroups },
       async (state, questions) => {
+        expect(questions).not.toHaveProperty("create");
         const answers = await judge(state, questions);
-        if (questions.create)
-          answers.create = {
-            type: "choice",
-            choice,
-            confidence,
-            probabilities: {
-              yes: choice === "yes" ? probability : 1 - probability,
-              no: choice === "no" ? probability : 1 - probability,
-            },
-          };
+        // A stale/global veto must have no influence on the user's permission.
+        answers.create = { type: "choice", choice: "no", confidence: 1, probabilities: { no: 1 } };
         return answers;
       },
-      async () => {
-        names++;
-        return "Travel";
-      },
+      naming,
       () => {},
     );
     expect(result.blocks).toEqual([
-      { key: "group_7", groupId: 7, title: "Development", tabIds: [2, 3] },
-      { key: "topic_4", title: creates ? "Travel" : "", tabIds: [4, 5], create: creates },
+      {
+        key: "topic_4",
+        title: allowNewGroups ? "Travel" : "",
+        tabIds: [4, 5],
+        create: allowNewGroups,
+      },
     ]);
-    expect(names).toBe(creates ? 1 : 0);
+    expect(naming).toHaveBeenCalledTimes(allowNewGroups ? 1 : 0);
   },
 );
+
+it("leaves confidently unrelated tabs ungrouped when new groups are allowed", async () => {
+  const naming = vi.fn(async () => "Unused");
+  const source: Snapshot = {
+    ...before,
+    groups: [],
+    tabs: [
+      { ...before.tabs[3], title: "Travel plans", url: "https://travel.test/" },
+      { ...before.tabs[4], title: "Database reference", url: "https://database.test/" },
+    ],
+  };
+  const result = await buildPlan(
+    source,
+    { ...DEFAULT_SETTINGS, allowNewGroups: true },
+    async (state, questions) => {
+      expect(questions).not.toHaveProperty("create");
+      const answers = await judge(state, questions);
+      answers.topic_5 = {
+        type: "choice",
+        choice: "self",
+        confidence: 1,
+        probabilities: { self: 1, "4": 0 },
+      };
+      return answers;
+    },
+    naming,
+    () => {},
+  );
+  expect(result.blocks).toEqual([
+    { key: "topic_4", title: "", tabIds: [4], create: false },
+    { key: "topic_5", title: "", tabIds: [5], create: false },
+  ]);
+  expect(naming).not.toHaveBeenCalled();
+  expect(result.warnings).toEqual([]);
+});
 
 it.each(["none", "uncertainMembership", "uncertainTopic", "self"])(
   "preserves separate tabs for %s decisions",
