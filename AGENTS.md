@@ -31,3 +31,12 @@
 GitHub-hosted CI is intentionally paused to avoid Actions billing. Do not treat missing CI, or historical failed/cancelled Actions runs, as an implementation blocker. Do not spend time trying to repair or re-run hosted Actions unless the user explicitly says hosted CI has been re-enabled.
 
 Run the repository's documented validation commands locally and report the exact commands and results. Do not manually dispatch the GitHub Actions validation workflow unless explicitly requested.
+
+## Issue-closing PRs
+
+When creating a pull request that fully implements or fixes a GitHub issue, include a GitHub closing keyword in the PR body so the issue closes automatically when the PR merges:
+
+- Same repository: `Closes #123`
+- Cross-repository: `Closes owner/repository#123`
+
+Prefer `Closes` over a plain `Refs`/issue link when the PR is intended to complete the issue. Use `Refs` only when the PR is deliberately partial and should not close the ticket. If one PR fully completes multiple issues, include a closing line for each one.
