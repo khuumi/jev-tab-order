@@ -26,3 +26,8 @@
 - `CHROMEWEBSTORE.md` field names may be Japanese; localized store copy uses its
   target language.
 - Do not modify downloaded official skills to enforce these language conventions.
+## Hosted CI status
+
+GitHub-hosted CI is intentionally paused to avoid Actions billing. Do not treat missing CI, or historical failed/cancelled Actions runs, as an implementation blocker. Do not spend time trying to repair or re-run hosted Actions unless the user explicitly says hosted CI has been re-enabled.
+
+Run the repository's documented validation commands locally and report the exact commands and results. Do not manually dispatch the GitHub Actions validation workflow unless explicitly requested.
