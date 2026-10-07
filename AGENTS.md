@@ -32,11 +32,18 @@ GitHub-hosted CI is intentionally paused to avoid Actions billing. Do not treat 
 
 Run the repository's documented validation commands locally and report the exact commands and results. Do not manually dispatch the GitHub Actions validation workflow unless explicitly requested.
 
-## Issue-closing PRs
+## Work-ticket lifecycle
 
-When creating a pull request that fully implements or fixes a GitHub issue, include a GitHub closing keyword in the PR body so the issue closes automatically when the PR merges:
+Use three explicit GitHub issue types:
 
-- Same repository: `Closes #123`
-- Cross-repository: `Closes owner/repository#123`
+- `[Agent]` — bounded implementation work that an agent can complete and verify. Prefer one Agent issue → one PR. A PR that fully completes it must use `Closes #123` (or `Closes owner/repository#123` cross-repo).
+- `[Human]` — acceptance or work requiring the owner, subjective judgment, a physical device/appliance, personal credentials/accounts, or another real-world check the coding agent cannot independently prove. These normally do not need a PR.
+- `[Epic]` — a larger product outcome spanning multiple Agent and/or Human tickets. Epics may stay open across many PRs; implementation should happen in bounded Agent children.
 
-Prefer `Closes` over a plain `Refs`/issue link when the PR is intended to complete the issue. Use `Refs` only when the PR is deliberately partial and should not close the ticket. If one PR fully completes multiple issues, include a closing line for each one.
+Do not mix human-only acceptance into an Agent ticket. If implementation needs physical-device, subjective, account-owner, reboot, external-network, or similar acceptance, put that checklist in a linked `[Human]` ticket. The Agent PR can then close its Agent issue when the implementation and agent-verifiable checks are complete.
+
+If Human validation later finds a defect, create a new bounded `[Agent]` bug from the concrete observation instead of keeping or reopening an otherwise completed implementation ticket unless the original implementation was genuinely incomplete.
+
+Use `Refs #123` only for deliberately partial work that should not close the issue. When practical, split remaining work into a new ticket before merging. Only `[Agent]` tickets should normally receive autonomous-agent pickup labels such as `ready for agent pickup`.
+
+The canonical workflow convention is tracked in `khuumi/mac-agent-setup#37`.
